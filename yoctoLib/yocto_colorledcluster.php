@@ -1,11 +1,11 @@
 <?php
 /*********************************************************************
  *
- * $Id: yocto_colorledcluster.php 24717 2016-06-03 16:09:53Z seb $
+ *  $Id: yocto_colorledcluster.php 43580 2021-01-26 17:46:01Z mvuilleu $
  *
- * Implements YColorLedCluster, the high-level API for ColorLedCluster functions
+ *  Implements YColorLedCluster, the high-level API for ColorLedCluster functions
  *
- * - - - - - - - - - License information: - - - - - - - - - 
+ *  - - - - - - - - - License information: - - - - - - - - -
  *
  *  Copyright (C) 2011 and beyond by Yoctopuce Sarl, Switzerland.
  *
@@ -24,7 +24,7 @@
  *  obligations.
  *
  *  THE SOFTWARE AND DOCUMENTATION ARE PROVIDED 'AS IS' WITHOUT
- *  WARRANTY OF ANY KIND, EITHER EXPRESS OR IMPLIED, INCLUDING 
+ *  WARRANTY OF ANY KIND, EITHER EXPRESS OR IMPLIED, INCLUDING
  *  WITHOUT LIMITATION, ANY WARRANTY OF MERCHANTABILITY, FITNESS
  *  FOR A PARTICULAR PURPOSE, TITLE AND NON-INFRINGEMENT. IN NO
  *  EVENT SHALL LICENSOR BE LIABLE FOR ANY INCIDENTAL, SPECIAL,
@@ -41,21 +41,27 @@
 //--- (YColorLedCluster return codes)
 //--- (end of YColorLedCluster return codes)
 //--- (YColorLedCluster definitions)
+if(!defined('Y_LEDTYPE_RGB'))                define('Y_LEDTYPE_RGB',               0);
+if(!defined('Y_LEDTYPE_RGBW'))               define('Y_LEDTYPE_RGBW',              1);
+if(!defined('Y_LEDTYPE_INVALID'))            define('Y_LEDTYPE_INVALID',           -1);
 if(!defined('Y_ACTIVELEDCOUNT_INVALID'))     define('Y_ACTIVELEDCOUNT_INVALID',    YAPI_INVALID_UINT);
 if(!defined('Y_MAXLEDCOUNT_INVALID'))        define('Y_MAXLEDCOUNT_INVALID',       YAPI_INVALID_UINT);
 if(!defined('Y_BLINKSEQMAXCOUNT_INVALID'))   define('Y_BLINKSEQMAXCOUNT_INVALID',  YAPI_INVALID_UINT);
 if(!defined('Y_BLINKSEQMAXSIZE_INVALID'))    define('Y_BLINKSEQMAXSIZE_INVALID',   YAPI_INVALID_UINT);
 if(!defined('Y_COMMAND_INVALID'))            define('Y_COMMAND_INVALID',           YAPI_INVALID_STRING);
 //--- (end of YColorLedCluster definitions)
+    #--- (YColorLedCluster yapiwrapper)
+   #--- (end of YColorLedCluster yapiwrapper)
 
 //--- (YColorLedCluster declaration)
 /**
- * YColorLedCluster Class: ColorLedCluster function interface
+ * YColorLedCluster Class: RGB LED cluster control interface, available for instance in the
+ * Yocto-Color-V2 or the Yocto-MaxiBuzzer
  *
- * The Yoctopuce application programming interface
- * allows you to drive a color LED cluster. Unlike the ColorLed class, the ColorLedCluster
- * allows to handle several LEDs at one. Color changes can be done   using RGB coordinates as well as
- * HSL coordinates.
+ * The YColorLedCluster class allows you to drive a
+ * color LED cluster. Unlike the ColorLed class, the YColorLedCluster
+ * class allows to handle several LEDs at once. Color changes can be done using RGB
+ * coordinates as well as HSL coordinates.
  * The module performs all conversions form RGB to HSL automatically. It is then
  * self-evident to turn on a LED with a given hue and to progressively vary its
  * saturation or lightness. If needed, you can find more information on the
@@ -64,6 +70,9 @@ if(!defined('Y_COMMAND_INVALID'))            define('Y_COMMAND_INVALID',        
 class YColorLedCluster extends YFunction
 {
     const ACTIVELEDCOUNT_INVALID         = YAPI_INVALID_UINT;
+    const LEDTYPE_RGB                    = 0;
+    const LEDTYPE_RGBW                   = 1;
+    const LEDTYPE_INVALID                = -1;
     const MAXLEDCOUNT_INVALID            = YAPI_INVALID_UINT;
     const BLINKSEQMAXCOUNT_INVALID       = YAPI_INVALID_UINT;
     const BLINKSEQMAXSIZE_INVALID        = YAPI_INVALID_UINT;
@@ -72,6 +81,7 @@ class YColorLedCluster extends YFunction
 
     //--- (YColorLedCluster attributes)
     protected $_activeLedCount           = Y_ACTIVELEDCOUNT_INVALID;     // UInt31
+    protected $_ledType                  = Y_LEDTYPE_INVALID;            // LedType
     protected $_maxLedCount              = Y_MAXLEDCOUNT_INVALID;        // UInt31
     protected $_blinkSeqMaxCount         = Y_BLINKSEQMAXCOUNT_INVALID;   // UInt31
     protected $_blinkSeqMaxSize          = Y_BLINKSEQMAXSIZE_INVALID;    // UInt31
@@ -95,6 +105,9 @@ class YColorLedCluster extends YFunction
         case 'activeLedCount':
             $this->_activeLedCount = intval($val);
             return 1;
+        case 'ledType':
+            $this->_ledType = intval($val);
+            return 1;
         case 'maxLedCount':
             $this->_maxLedCount = intval($val);
             return 1;
@@ -114,26 +127,30 @@ class YColorLedCluster extends YFunction
     /**
      * Returns the number of LEDs currently handled by the device.
      *
-     * @return an integer corresponding to the number of LEDs currently handled by the device
+     * @return integer : an integer corresponding to the number of LEDs currently handled by the device
      *
-     * On failure, throws an exception or returns Y_ACTIVELEDCOUNT_INVALID.
+     * On failure, throws an exception or returns YColorLedCluster::ACTIVELEDCOUNT_INVALID.
      */
     public function get_activeLedCount()
     {
+        // $res                    is a int;
         if ($this->_cacheExpiration <= YAPI::GetTickCount()) {
-            if ($this->load(YAPI::$defaultCacheValidity) != YAPI_SUCCESS) {
+            if ($this->load(YAPI::$_yapiContext->GetCacheValidity()) != YAPI_SUCCESS) {
                 return Y_ACTIVELEDCOUNT_INVALID;
             }
         }
-        return $this->_activeLedCount;
+        $res = $this->_activeLedCount;
+        return $res;
     }
 
     /**
      * Changes the number of LEDs currently handled by the device.
+     * Remember to call the matching module
+     * saveToFlash() method to save the setting permanently.
      *
-     * @param newval : an integer corresponding to the number of LEDs currently handled by the device
+     * @param integer $newval : an integer corresponding to the number of LEDs currently handled by the device
      *
-     * @return YAPI_SUCCESS if the call succeeds.
+     * @return integer : YAPI::SUCCESS if the call succeeds.
      *
      * On failure, throws an exception or returns a negative error code.
      */
@@ -144,64 +161,110 @@ class YColorLedCluster extends YFunction
     }
 
     /**
+     * Returns the RGB LED type currently handled by the device.
+     *
+     * @return integer : either YColorLedCluster::LEDTYPE_RGB or YColorLedCluster::LEDTYPE_RGBW, according
+     * to the RGB LED type currently handled by the device
+     *
+     * On failure, throws an exception or returns YColorLedCluster::LEDTYPE_INVALID.
+     */
+    public function get_ledType()
+    {
+        // $res                    is a enumLEDTYPE;
+        if ($this->_cacheExpiration <= YAPI::GetTickCount()) {
+            if ($this->load(YAPI::$_yapiContext->GetCacheValidity()) != YAPI_SUCCESS) {
+                return Y_LEDTYPE_INVALID;
+            }
+        }
+        $res = $this->_ledType;
+        return $res;
+    }
+
+    /**
+     * Changes the RGB LED type currently handled by the device.
+     * Remember to call the matching module
+     * saveToFlash() method to save the setting permanently.
+     *
+     * @param integer $newval : either YColorLedCluster::LEDTYPE_RGB or YColorLedCluster::LEDTYPE_RGBW,
+     * according to the RGB LED type currently handled by the device
+     *
+     * @return integer : YAPI::SUCCESS if the call succeeds.
+     *
+     * On failure, throws an exception or returns a negative error code.
+     */
+    public function set_ledType($newval)
+    {
+        $rest_val = strval($newval);
+        return $this->_setAttr("ledType",$rest_val);
+    }
+
+    /**
      * Returns the maximum number of LEDs that the device can handle.
      *
-     * @return an integer corresponding to the maximum number of LEDs that the device can handle
+     * @return integer : an integer corresponding to the maximum number of LEDs that the device can handle
      *
-     * On failure, throws an exception or returns Y_MAXLEDCOUNT_INVALID.
+     * On failure, throws an exception or returns YColorLedCluster::MAXLEDCOUNT_INVALID.
      */
     public function get_maxLedCount()
     {
+        // $res                    is a int;
         if ($this->_cacheExpiration == 0) {
-            if ($this->load(YAPI::$defaultCacheValidity) != YAPI_SUCCESS) {
+            if ($this->load(YAPI::$_yapiContext->GetCacheValidity()) != YAPI_SUCCESS) {
                 return Y_MAXLEDCOUNT_INVALID;
             }
         }
-        return $this->_maxLedCount;
+        $res = $this->_maxLedCount;
+        return $res;
     }
 
     /**
      * Returns the maximum number of sequences that the device can handle.
      *
-     * @return an integer corresponding to the maximum number of sequences that the device can handle
+     * @return integer : an integer corresponding to the maximum number of sequences that the device can handle
      *
-     * On failure, throws an exception or returns Y_BLINKSEQMAXCOUNT_INVALID.
+     * On failure, throws an exception or returns YColorLedCluster::BLINKSEQMAXCOUNT_INVALID.
      */
     public function get_blinkSeqMaxCount()
     {
+        // $res                    is a int;
         if ($this->_cacheExpiration == 0) {
-            if ($this->load(YAPI::$defaultCacheValidity) != YAPI_SUCCESS) {
+            if ($this->load(YAPI::$_yapiContext->GetCacheValidity()) != YAPI_SUCCESS) {
                 return Y_BLINKSEQMAXCOUNT_INVALID;
             }
         }
-        return $this->_blinkSeqMaxCount;
+        $res = $this->_blinkSeqMaxCount;
+        return $res;
     }
 
     /**
      * Returns the maximum length of sequences.
      *
-     * @return an integer corresponding to the maximum length of sequences
+     * @return integer : an integer corresponding to the maximum length of sequences
      *
-     * On failure, throws an exception or returns Y_BLINKSEQMAXSIZE_INVALID.
+     * On failure, throws an exception or returns YColorLedCluster::BLINKSEQMAXSIZE_INVALID.
      */
     public function get_blinkSeqMaxSize()
     {
+        // $res                    is a int;
         if ($this->_cacheExpiration == 0) {
-            if ($this->load(YAPI::$defaultCacheValidity) != YAPI_SUCCESS) {
+            if ($this->load(YAPI::$_yapiContext->GetCacheValidity()) != YAPI_SUCCESS) {
                 return Y_BLINKSEQMAXSIZE_INVALID;
             }
         }
-        return $this->_blinkSeqMaxSize;
+        $res = $this->_blinkSeqMaxSize;
+        return $res;
     }
 
     public function get_command()
     {
+        // $res                    is a string;
         if ($this->_cacheExpiration <= YAPI::GetTickCount()) {
-            if ($this->load(YAPI::$defaultCacheValidity) != YAPI_SUCCESS) {
+            if ($this->load(YAPI::$_yapiContext->GetCacheValidity()) != YAPI_SUCCESS) {
                 return Y_COMMAND_INVALID;
             }
         }
-        return $this->_command;
+        $res = $this->_command;
+        return $res;
     }
 
     public function set_command($newval)
@@ -223,15 +286,20 @@ class YColorLedCluster extends YFunction
      *
      * This function does not require that the RGB LED cluster is online at the time
      * it is invoked. The returned object is nevertheless valid.
-     * Use the method YColorLedCluster.isOnline() to test if the RGB LED cluster is
+     * Use the method isOnline() to test if the RGB LED cluster is
      * indeed online at a given time. In case of ambiguity when looking for
      * a RGB LED cluster by logical name, no error is notified: the first instance
      * found is returned. The search is performed first by hardware name,
      * then by logical name.
      *
-     * @param func : a string that uniquely characterizes the RGB LED cluster
+     * If a call to this object's is_online() method returns FALSE although
+     * you are certain that the matching device is plugged, make sure that you did
+     * call registerHub() at application initialization time.
      *
-     * @return a YColorLedCluster object allowing you to drive the RGB LED cluster.
+     * @param string $func : a string that uniquely characterizes the RGB LED cluster, for instance
+     *         YRGBLED2.colorLedCluster.
+     *
+     * @return YColorLedCluster : a YColorLedCluster object allowing you to drive the RGB LED cluster.
      */
     public static function FindColorLedCluster($func)
     {
@@ -250,14 +318,14 @@ class YColorLedCluster extends YFunction
     }
 
     /**
-     * Changes the current color of consecutve LEDs in the cluster, using a RGB color. Encoding is done as
-     * follows: 0xRRGGBB.
+     * Changes the current color of consecutive LEDs in the cluster, using a RGB color. Encoding is done
+     * as follows: 0xRRGGBB.
      *
-     * @param ledIndex :  index of the first affected LED.
+     * @param integer $ledIndex :  index of the first affected LED.
      * @param count    :  affected LED count.
-     * @param rgbValue :  new color.
+     * @param integer $rgbValue :  new color.
      *
-     * @return YAPI_SUCCESS when the call succeeds.
+     * @return integer : YAPI::SUCCESS when the call succeeds.
      *
      * On failure, throws an exception or returns a negative error code.
      */
@@ -267,16 +335,15 @@ class YColorLedCluster extends YFunction
     }
 
     /**
-     * Changes the  color at device startup of consecutve LEDs in the cluster, using a RGB color. Encoding
-     * is done as follows: 0xRRGGBB.
-     * Don't forget to call saveLedsConfigAtPowerOn() to make sure the modification is saved in the device
-     * flash memory.
+     * Changes the  color at device startup of consecutive LEDs in the cluster, using a RGB color.
+     * Encoding is done as follows: 0xRRGGBB. Don't forget to call saveLedsConfigAtPowerOn()
+     * to make sure the modification is saved in the device flash memory.
      *
-     * @param ledIndex :  index of the first affected LED.
+     * @param integer $ledIndex :  index of the first affected LED.
      * @param count    :  affected LED count.
-     * @param rgbValue :  new color.
+     * @param integer $rgbValue :  new color.
      *
-     * @return YAPI_SUCCESS when the call succeeds.
+     * @return integer : YAPI::SUCCESS when the call succeeds.
      *
      * On failure, throws an exception or returns a negative error code.
      */
@@ -286,14 +353,34 @@ class YColorLedCluster extends YFunction
     }
 
     /**
+     * Changes the  color at device startup of consecutive LEDs in the cluster, using a HSL color.
+     * Encoding is done as follows: 0xHHSSLL. Don't forget to call saveLedsConfigAtPowerOn()
+     * to make sure the modification is saved in the device flash memory.
+     *
+     * @param integer $ledIndex :  index of the first affected LED.
+     * @param count    :  affected LED count.
+     * @param integer $hslValue :  new color.
+     *
+     * @return integer : YAPI::SUCCESS when the call succeeds.
+     *
+     * On failure, throws an exception or returns a negative error code.
+     */
+    public function set_hslColorAtPowerOn($ledIndex,$count,$hslValue)
+    {
+        // $rgbValue               is a int;
+        $rgbValue = $this->hsl2rgb($hslValue);
+        return $this->sendCommand(sprintf('SC%d,%d,%x',$ledIndex,$count,$rgbValue));
+    }
+
+    /**
      * Changes the current color of consecutive LEDs in the cluster, using a HSL color. Encoding is done
      * as follows: 0xHHSSLL.
      *
-     * @param ledIndex :  index of the first affected LED.
+     * @param integer $ledIndex :  index of the first affected LED.
      * @param count    :  affected LED count.
-     * @param hslValue :  new color.
+     * @param integer $hslValue :  new color.
      *
-     * @return YAPI_SUCCESS when the call succeeds.
+     * @return integer : YAPI::SUCCESS when the call succeeds.
      *
      * On failure, throws an exception or returns a negative error code.
      */
@@ -306,12 +393,12 @@ class YColorLedCluster extends YFunction
      * Allows you to modify the current color of a group of adjacent LEDs to another color, in a seamless and
      * autonomous manner. The transition is performed in the RGB space.
      *
-     * @param ledIndex :  index of the first affected LED.
+     * @param integer $ledIndex :  index of the first affected LED.
      * @param count    :  affected LED count.
-     * @param rgbValue :  new color (0xRRGGBB).
+     * @param integer $rgbValue :  new color (0xRRGGBB).
      * @param delay    :  transition duration in ms
      *
-     * @return YAPI_SUCCESS when the call succeeds.
+     * @return integer : YAPI::SUCCESS when the call succeeds.
      *
      * On failure, throws an exception or returns a negative error code.
      */
@@ -328,12 +415,12 @@ class YColorLedCluster extends YFunction
      * If the difference is exactly 180°, the module selects the transition which increases
      * the hue.
      *
-     * @param ledIndex :  index of the fisrt affected LED.
+     * @param integer $ledIndex :  index of the first affected LED.
      * @param count    :  affected LED count.
-     * @param hslValue :  new color (0xHHSSLL).
+     * @param integer $hslValue :  new color (0xHHSSLL).
      * @param delay    :  transition duration in ms
      *
-     * @return YAPI_SUCCESS when the call succeeds.
+     * @return integer : YAPI::SUCCESS when the call succeeds.
      *
      * On failure, throws an exception or returns a negative error code.
      */
@@ -347,11 +434,11 @@ class YColorLedCluster extends YFunction
      * be executed in loop by a group of LEDs.  Sequences are persistent and are saved
      * in the device flash memory as soon as the saveBlinkSeq() method is called.
      *
-     * @param seqIndex :  sequence index.
-     * @param rgbValue :  target color (0xRRGGBB)
+     * @param integer $seqIndex :  sequence index.
+     * @param integer $rgbValue :  target color (0xRRGGBB)
      * @param delay    :  transition duration in ms
      *
-     * @return YAPI_SUCCESS when the call succeeds.
+     * @return integer : YAPI::SUCCESS when the call succeeds.
      *
      * On failure, throws an exception or returns a negative error code.
      */
@@ -362,14 +449,14 @@ class YColorLedCluster extends YFunction
 
     /**
      * Adds an HSL transition to a sequence. A sequence is a transition list, which can
-     * be executed in loop by an group of LEDs.  Sequences are persistant and are saved
+     * be executed in loop by an group of LEDs.  Sequences are persistent and are saved
      * in the device flash memory as soon as the saveBlinkSeq() method is called.
      *
-     * @param seqIndex : sequence index.
-     * @param hslValue : target color (0xHHSSLL)
+     * @param integer $seqIndex : sequence index.
+     * @param integer $hslValue : target color (0xHHSSLL)
      * @param delay    : transition duration in ms
      *
-     * @return YAPI_SUCCESS when the call succeeds.
+     * @return integer : YAPI::SUCCESS when the call succeeds.
      *
      * On failure, throws an exception or returns a negative error code.
      */
@@ -385,9 +472,9 @@ class YColorLedCluster extends YFunction
      * is played at the end of the reverse execution, the sequence starts again in
      * the initial direction.
      *
-     * @param seqIndex : sequence index.
+     * @param integer $seqIndex : sequence index.
      *
-     * @return YAPI_SUCCESS when the call succeeds.
+     * @return integer : YAPI::SUCCESS when the call succeeds.
      *
      * On failure, throws an exception or returns a negative error code.
      */
@@ -397,17 +484,50 @@ class YColorLedCluster extends YFunction
     }
 
     /**
+     * Adds to a sequence a jump to another sequence. When a pixel will reach this jump,
+     * it will be automatically relinked to the new sequence, and will run it starting
+     * from the beginning.
+     *
+     * @param integer $seqIndex : sequence index.
+     * @param integer $linkSeqIndex : index of the sequence to chain.
+     *
+     * @return integer : YAPI::SUCCESS when the call succeeds.
+     *
+     * On failure, throws an exception or returns a negative error code.
+     */
+    public function addJumpToBlinkSeq($seqIndex,$linkSeqIndex)
+    {
+        return $this->sendCommand(sprintf('AC%d,100,%d,1000',$seqIndex,$linkSeqIndex));
+    }
+
+    /**
+     * Adds a to a sequence a hard stop code. When a pixel will reach this stop code,
+     * instead of restarting the sequence in a loop it will automatically be unlinked
+     * from the sequence.
+     *
+     * @param integer $seqIndex : sequence index.
+     *
+     * @return integer : YAPI::SUCCESS when the call succeeds.
+     *
+     * On failure, throws an exception or returns a negative error code.
+     */
+    public function addUnlinkToBlinkSeq($seqIndex)
+    {
+        return $this->sendCommand(sprintf('AC%d,100,-1,1000',$seqIndex));
+    }
+
+    /**
      * Links adjacent LEDs to a specific sequence. These LEDs start to execute
      * the sequence as soon as  startBlinkSeq is called. It is possible to add an offset
      * in the execution: that way we  can have several groups of LED executing the same
      * sequence, with a  temporal offset. A LED cannot be linked to more than one sequence.
      *
-     * @param ledIndex :  index of the first affected LED.
+     * @param integer $ledIndex :  index of the first affected LED.
      * @param count    :  affected LED count.
-     * @param seqIndex :  sequence index.
+     * @param integer $seqIndex :  sequence index.
      * @param offset   :  execution offset in ms.
      *
-     * @return YAPI_SUCCESS when the call succeeds.
+     * @return integer : YAPI::SUCCESS when the call succeeds.
      *
      * On failure, throws an exception or returns a negative error code.
      */
@@ -417,17 +537,17 @@ class YColorLedCluster extends YFunction
     }
 
     /**
-     * Links adjacent LEDs to a specific sequence at device poweron. Don't forget to configure
+     * Links adjacent LEDs to a specific sequence at device power-on. Don't forget to configure
      * the sequence auto start flag as well and call saveLedsConfigAtPowerOn(). It is possible to add an offset
      * in the execution: that way we  can have several groups of LEDs executing the same
      * sequence, with a  temporal offset. A LED cannot be linked to more than one sequence.
      *
-     * @param ledIndex :  index of the first affected LED.
+     * @param integer $ledIndex :  index of the first affected LED.
      * @param count    :  affected LED count.
-     * @param seqIndex :  sequence index.
+     * @param integer $seqIndex :  sequence index.
      * @param offset   :  execution offset in ms.
      *
-     * @return YAPI_SUCCESS when the call succeeds.
+     * @return integer : YAPI::SUCCESS when the call succeeds.
      *
      * On failure, throws an exception or returns a negative error code.
      */
@@ -442,12 +562,12 @@ class YColorLedCluster extends YFunction
      * introduces a shift between LEDs so that the specified number of sequence periods
      * appears on the group of LEDs (wave effect).
      *
-     * @param ledIndex :  index of the first affected LED.
+     * @param integer $ledIndex :  index of the first affected LED.
      * @param count    :  affected LED count.
-     * @param seqIndex :  sequence index.
+     * @param integer $seqIndex :  sequence index.
      * @param periods  :  number of periods to show on LEDs.
      *
-     * @return YAPI_SUCCESS when the call succeeds.
+     * @return integer : YAPI::SUCCESS when the call succeeds.
      *
      * On failure, throws an exception or returns a negative error code.
      */
@@ -462,7 +582,7 @@ class YColorLedCluster extends YFunction
      * @param ledIndex  :  index of the first affected LED.
      * @param count     :  affected LED count.
      *
-     * @return YAPI_SUCCESS when the call succeeds.
+     * @return integer : YAPI::SUCCESS when the call succeeds.
      *
      * On failure, throws an exception or returns a negative error code.
      */
@@ -473,11 +593,11 @@ class YColorLedCluster extends YFunction
 
     /**
      * Starts a sequence execution: every LED linked to that sequence starts to
-     * run it in a loop.
+     * run it in a loop. Note that a sequence with a zero duration can't be started.
      *
-     * @param seqIndex :  index of the sequence to start.
+     * @param integer $seqIndex :  index of the sequence to start.
      *
-     * @return YAPI_SUCCESS when the call succeeds.
+     * @return integer : YAPI::SUCCESS when the call succeeds.
      *
      * On failure, throws an exception or returns a negative error code.
      */
@@ -490,9 +610,9 @@ class YColorLedCluster extends YFunction
      * Stops a sequence execution. If started again, the execution
      * restarts from the beginning.
      *
-     * @param seqIndex :  index of the sequence to stop.
+     * @param integer $seqIndex :  index of the sequence to stop.
      *
-     * @return YAPI_SUCCESS when the call succeeds.
+     * @return integer : YAPI::SUCCESS when the call succeeds.
      *
      * On failure, throws an exception or returns a negative error code.
      */
@@ -502,12 +622,12 @@ class YColorLedCluster extends YFunction
     }
 
     /**
-     * Stops a sequence execution and resets its contents. Leds linked to this
+     * Stops a sequence execution and resets its contents. LEDs linked to this
      * sequence are not automatically updated anymore.
      *
-     * @param seqIndex :  index of the sequence to reset
+     * @param integer $seqIndex :  index of the sequence to reset
      *
-     * @return YAPI_SUCCESS when the call succeeds.
+     * @return integer : YAPI::SUCCESS when the call succeeds.
      *
      * On failure, throws an exception or returns a negative error code.
      */
@@ -518,13 +638,14 @@ class YColorLedCluster extends YFunction
 
     /**
      * Configures a sequence to make it start automatically at device
-     * startup. Don't forget to call saveBlinkSeq() to make sure the
+     * startup. Note that a sequence with a zero duration can't be started.
+     * Don't forget to call saveBlinkSeq() to make sure the
      * modification is saved in the device flash memory.
      *
-     * @param seqIndex :  index of the sequence to reset.
-     * @param autostart : 0 to keep the sequence turned off and 1 to start it automatically.
+     * @param integer $seqIndex :  index of the sequence to reset.
+     * @param integer $autostart : 0 to keep the sequence turned off and 1 to start it automatically.
      *
-     * @return YAPI_SUCCESS when the call succeeds.
+     * @return integer : YAPI::SUCCESS when the call succeeds.
      *
      * On failure, throws an exception or returns a negative error code.
      */
@@ -538,10 +659,10 @@ class YColorLedCluster extends YFunction
      * thousand. If you configure a slower speed, you can play the sequence in slow-motion.
      * If you set a negative speed, you can play the sequence in reverse direction.
      *
-     * @param seqIndex :  index of the sequence to start.
-     * @param speed :     sequence running speed (-1000...1000).
+     * @param integer $seqIndex :  index of the sequence to start.
+     * @param integer $speed :     sequence running speed (-1000...1000).
      *
-     * @return YAPI_SUCCESS when the call succeeds.
+     * @return integer : YAPI::SUCCESS when the call succeeds.
      *
      * On failure, throws an exception or returns a negative error code.
      */
@@ -555,11 +676,16 @@ class YColorLedCluster extends YFunction
      * sequence binding for all LEDs. Warning: if some LEDs are linked to a sequence, the
      * method saveBlinkSeq() must also be called to save the sequence definition.
      *
-     * @return YAPI_SUCCESS when the call succeeds.
+     * @return integer : YAPI::SUCCESS when the call succeeds.
      *
      * On failure, throws an exception or returns a negative error code.
      */
     public function saveLedsConfigAtPowerOn()
+    {
+        return $this->sendCommand('WL');
+    }
+
+    public function saveLedsState()
     {
         return $this->sendCommand('WL');
     }
@@ -569,9 +695,9 @@ class YColorLedCluster extends YFunction
      * to save the LEDs startup bindings, the method saveLedsConfigAtPowerOn()
      * must be called.
      *
-     * @param seqIndex :  index of the sequence to start.
+     * @param integer $seqIndex :  index of the sequence to start.
      *
-     * @return YAPI_SUCCESS when the call succeeds.
+     * @return integer : YAPI::SUCCESS when the call succeeds.
      *
      * On failure, throws an exception or returns a negative error code.
      */
@@ -585,10 +711,10 @@ class YColorLedCluster extends YFunction
      * First three bytes are RGB components for LED specified as parameter, the
      * next three bytes for the next LED, etc.
      *
-     * @param ledIndex : index of the first LED which should be updated
-     * @param buff : the binary buffer to send
+     * @param integer $ledIndex : index of the first LED which should be updated
+     * @param string $buff : the binary buffer to send
      *
-     * @return YAPI_SUCCESS if the call succeeds.
+     * @return integer : YAPI::SUCCESS if the call succeeds.
      *
      * On failure, throws an exception or returns a negative error code.
      */
@@ -602,10 +728,10 @@ class YColorLedCluster extends YFunction
      * The first number represents the RGB value of the LED specified as parameter, the second
      * number represents the RGB value of the next LED, etc.
      *
-     * @param ledIndex : index of the first LED which should be updated
-     * @param rgbList : a list of 24bit RGB codes, in the form 0xRRGGBB
+     * @param integer $ledIndex : index of the first LED which should be updated
+     * @param Integer[] $rgbList : a list of 24bit RGB codes, in the form 0xRRGGBB
      *
-     * @return YAPI_SUCCESS if the call succeeds.
+     * @return integer : YAPI::SUCCESS if the call succeeds.
      *
      * On failure, throws an exception or returns a negative error code.
      */
@@ -617,7 +743,7 @@ class YColorLedCluster extends YFunction
         // $rgb                    is a int;
         // $res                    is a int;
         $listlen = sizeof($rgbList);
-        $buff =  pack('C',array_fill(0, 3*$listlen, 0));
+        $buff = (3*$listlen > 0 ? pack('C',array_fill(0, 3*$listlen, 0)) : '');
         $idx = 0;
         while ($idx < $listlen) {
             $rgb = $rgbList[$idx];
@@ -626,7 +752,7 @@ class YColorLedCluster extends YFunction
             $buff[3*$idx+2] = pack('C', (($rgb) & (255)));
             $idx = $idx + 1;
         }
-        // may throw an exception
+
         $res = $this->_upload(sprintf('rgb:0:%d', $ledIndex), $buff);
         return $res;
     }
@@ -636,14 +762,15 @@ class YColorLedCluster extends YFunction
      * color codes. The first color code represents the target RGB value of the first LED,
      * the next color code represents the target value of the next LED, etc.
      *
-     * @param rgbList : a list of target 24bit RGB codes, in the form 0xRRGGBB
+     * @param integer $ledIndex : index of the first LED which should be updated
+     * @param Integer[] $rgbList : a list of target 24bit RGB codes, in the form 0xRRGGBB
      * @param delay   : transition duration in ms
      *
-     * @return YAPI_SUCCESS if the call succeeds.
+     * @return integer : YAPI::SUCCESS if the call succeeds.
      *
      * On failure, throws an exception or returns a negative error code.
      */
-    public function rgbArray_move($rgbList,$delay)
+    public function rgbArrayOfs_move($ledIndex,$rgbList,$delay)
     {
         // $listlen                is a int;
         // $buff                   is a bin;
@@ -651,7 +778,7 @@ class YColorLedCluster extends YFunction
         // $rgb                    is a int;
         // $res                    is a int;
         $listlen = sizeof($rgbList);
-        $buff =  pack('C',array_fill(0, 3*$listlen, 0));
+        $buff = (3*$listlen > 0 ? pack('C',array_fill(0, 3*$listlen, 0)) : '');
         $idx = 0;
         while ($idx < $listlen) {
             $rgb = $rgbList[$idx];
@@ -660,8 +787,28 @@ class YColorLedCluster extends YFunction
             $buff[3*$idx+2] = pack('C', (($rgb) & (255)));
             $idx = $idx + 1;
         }
-        // may throw an exception
-        $res = $this->_upload(sprintf('rgb:%d',$delay), $buff);
+
+        $res = $this->_upload(sprintf('rgb:%d:%d',$delay,$ledIndex), $buff);
+        return $res;
+    }
+
+    /**
+     * Sets up a smooth RGB color transition to the specified pixel-by-pixel list of RGB
+     * color codes. The first color code represents the target RGB value of the first LED,
+     * the next color code represents the target value of the next LED, etc.
+     *
+     * @param Integer[] $rgbList : a list of target 24bit RGB codes, in the form 0xRRGGBB
+     * @param delay   : transition duration in ms
+     *
+     * @return integer : YAPI::SUCCESS if the call succeeds.
+     *
+     * On failure, throws an exception or returns a negative error code.
+     */
+    public function rgbArray_move($rgbList,$delay)
+    {
+        // $res                    is a int;
+
+        $res = $this->rgbArrayOfs_move(0,$rgbList,$delay);
         return $res;
     }
 
@@ -670,10 +817,10 @@ class YColorLedCluster extends YFunction
      * First three bytes are HSL components for the LED specified as parameter, the
      * next three bytes for the second LED, etc.
      *
-     * @param ledIndex : index of the first LED which should be updated
-     * @param buff : the binary buffer to send
+     * @param integer $ledIndex : index of the first LED which should be updated
+     * @param string $buff : the binary buffer to send
      *
-     * @return YAPI_SUCCESS if the call succeeds.
+     * @return integer : YAPI::SUCCESS if the call succeeds.
      *
      * On failure, throws an exception or returns a negative error code.
      */
@@ -687,10 +834,10 @@ class YColorLedCluster extends YFunction
      * The first number represents the HSL value of the LED specified as parameter, the second number represents
      * the HSL value of the second LED, etc.
      *
-     * @param ledIndex : index of the first LED which should be updated
-     * @param hslList : a list of 24bit HSL codes, in the form 0xHHSSLL
+     * @param integer $ledIndex : index of the first LED which should be updated
+     * @param Integer[] $hslList : a list of 24bit HSL codes, in the form 0xHHSSLL
      *
-     * @return YAPI_SUCCESS if the call succeeds.
+     * @return integer : YAPI::SUCCESS if the call succeeds.
      *
      * On failure, throws an exception or returns a negative error code.
      */
@@ -702,7 +849,7 @@ class YColorLedCluster extends YFunction
         // $hsl                    is a int;
         // $res                    is a int;
         $listlen = sizeof($hslList);
-        $buff =  pack('C',array_fill(0, 3*$listlen, 0));
+        $buff = (3*$listlen > 0 ? pack('C',array_fill(0, 3*$listlen, 0)) : '');
         $idx = 0;
         while ($idx < $listlen) {
             $hsl = $hslList[$idx];
@@ -711,7 +858,7 @@ class YColorLedCluster extends YFunction
             $buff[3*$idx+2] = pack('C', (($hsl) & (255)));
             $idx = $idx + 1;
         }
-        // may throw an exception
+
         $res = $this->_upload(sprintf('hsl:0:%d', $ledIndex), $buff);
         return $res;
     }
@@ -721,14 +868,35 @@ class YColorLedCluster extends YFunction
      * color codes. The first color code represents the target HSL value of the first LED,
      * the second color code represents the target value of the second LED, etc.
      *
-     * @param hslList : a list of target 24bit HSL codes, in the form 0xHHSSLL
+     * @param Integer[] $hslList : a list of target 24bit HSL codes, in the form 0xHHSSLL
      * @param delay   : transition duration in ms
      *
-     * @return YAPI_SUCCESS if the call succeeds.
+     * @return integer : YAPI::SUCCESS if the call succeeds.
      *
      * On failure, throws an exception or returns a negative error code.
      */
     public function hslArray_move($hslList,$delay)
+    {
+        // $res                    is a int;
+
+        $res = $this->hslArrayOfs_move(0,$hslList, $delay);
+        return $res;
+    }
+
+    /**
+     * Sets up a smooth HSL color transition to the specified pixel-by-pixel list of HSL
+     * color codes. The first color code represents the target HSL value of the first LED,
+     * the second color code represents the target value of the second LED, etc.
+     *
+     * @param integer $ledIndex : index of the first LED which should be updated
+     * @param Integer[] $hslList : a list of target 24bit HSL codes, in the form 0xHHSSLL
+     * @param delay   : transition duration in ms
+     *
+     * @return integer : YAPI::SUCCESS if the call succeeds.
+     *
+     * On failure, throws an exception or returns a negative error code.
+     */
+    public function hslArrayOfs_move($ledIndex,$hslList,$delay)
     {
         // $listlen                is a int;
         // $buff                   is a bin;
@@ -736,7 +904,7 @@ class YColorLedCluster extends YFunction
         // $hsl                    is a int;
         // $res                    is a int;
         $listlen = sizeof($hslList);
-        $buff =  pack('C',array_fill(0, 3*$listlen, 0));
+        $buff = (3*$listlen > 0 ? pack('C',array_fill(0, 3*$listlen, 0)) : '');
         $idx = 0;
         while ($idx < $listlen) {
             $hsl = $hslList[$idx];
@@ -745,8 +913,8 @@ class YColorLedCluster extends YFunction
             $buff[3*$idx+2] = pack('C', (($hsl) & (255)));
             $idx = $idx + 1;
         }
-        // may throw an exception
-        $res = $this->_upload(sprintf('hsl:%d',$delay), $buff);
+
+        $res = $this->_upload(sprintf('hsl:%d:%d',$delay,$ledIndex), $buff);
         return $res;
     }
 
@@ -755,10 +923,10 @@ class YColorLedCluster extends YFunction
      * First three bytes are RGB components for the first LED in the interval,
      * the next three bytes for the second LED in the interval, etc.
      *
-     * @param ledIndex : index of the first LED which should be returned
+     * @param integer $ledIndex : index of the first LED which should be returned
      * @param count    : number of LEDs which should be returned
      *
-     * @return a binary buffer with RGB components of selected LEDs.
+     * @return string : a binary buffer with RGB components of selected LEDs.
      *
      * On failure, throws an exception or returns an empty binary buffer.
      */
@@ -769,13 +937,13 @@ class YColorLedCluster extends YFunction
 
     /**
      * Returns a list on 24bit RGB color values with the current colors displayed on
-     * the RGB leds. The first number represents the RGB value of the first LED,
+     * the RGB LEDs. The first number represents the RGB value of the first LED,
      * the second number represents the RGB value of the second LED, etc.
      *
-     * @param ledIndex : index of the first LED which should be returned
+     * @param integer $ledIndex : index of the first LED which should be returned
      * @param count    : number of LEDs which should be returned
      *
-     * @return a list of 24bit color codes with RGB components of selected LEDs, as 0xRRGGBB.
+     * @return Integer[] : a list of 24bit color codes with RGB components of selected LEDs, as 0xRRGGBB.
      *
      * On failure, throws an exception or returns an empty array.
      */
@@ -787,7 +955,7 @@ class YColorLedCluster extends YFunction
         // $r                      is a int;
         // $g                      is a int;
         // $b                      is a int;
-        // may throw an exception
+
         $buff = $this->_download(sprintf('rgb.bin?typ=0&pos=%d&len=%d',3*$ledIndex,3*$count));
         while(sizeof($res) > 0) { array_pop($res); };
         $idx = 0;
@@ -806,10 +974,10 @@ class YColorLedCluster extends YFunction
      * The first number represents the startup RGB value of the first LED,
      * the second number represents the RGB value of the second LED, etc.
      *
-     * @param ledIndex : index of the first LED  which should be returned
+     * @param integer $ledIndex : index of the first LED  which should be returned
      * @param count    : number of LEDs which should be returned
      *
-     * @return a list of 24bit color codes with RGB components of selected LEDs, as 0xRRGGBB.
+     * @return Integer[] : a list of 24bit color codes with RGB components of selected LEDs, as 0xRRGGBB.
      *
      * On failure, throws an exception or returns an empty array.
      */
@@ -821,7 +989,7 @@ class YColorLedCluster extends YFunction
         // $r                      is a int;
         // $g                      is a int;
         // $b                      is a int;
-        // may throw an exception
+
         $buff = $this->_download(sprintf('rgb.bin?typ=4&pos=%d&len=%d',3*$ledIndex,3*$count));
         while(sizeof($res) > 0) { array_pop($res); };
         $idx = 0;
@@ -840,10 +1008,10 @@ class YColorLedCluster extends YFunction
      * sequence index for the the first LED, the second number represents the sequence
      * index for the second LED, etc.
      *
-     * @param ledIndex : index of the first LED which should be returned
+     * @param integer $ledIndex : index of the first LED which should be returned
      * @param count    : number of LEDs which should be returned
      *
-     * @return a list of integers with sequence index
+     * @return Integer[] : a list of integers with sequence index
      *
      * On failure, throws an exception or returns an empty array.
      */
@@ -853,7 +1021,7 @@ class YColorLedCluster extends YFunction
         $res = Array();         // intArr;
         // $idx                    is a int;
         // $seq                    is a int;
-        // may throw an exception
+
         $buff = $this->_download(sprintf('rgb.bin?typ=1&pos=%d&len=%d',$ledIndex,$count));
         while(sizeof($res) > 0) { array_pop($res); };
         $idx = 0;
@@ -870,10 +1038,10 @@ class YColorLedCluster extends YFunction
      * Since blinking sequences cannot be read from the device, this can be used
      * to detect if a specific blinking sequence is already programmed.
      *
-     * @param seqIndex : index of the first blinking sequence which should be returned
+     * @param integer $seqIndex : index of the first blinking sequence which should be returned
      * @param count    : number of blinking sequences which should be returned
      *
-     * @return a list of 32 bit integer signatures
+     * @return Integer[] : a list of 32 bit integer signatures
      *
      * On failure, throws an exception or returns an empty array.
      */
@@ -886,7 +1054,7 @@ class YColorLedCluster extends YFunction
         // $hl                     is a int;
         // $lh                     is a int;
         // $ll                     is a int;
-        // may throw an exception
+
         $buff = $this->_download(sprintf('rgb.bin?typ=2&pos=%d&len=%d',4*$seqIndex,4*$count));
         while(sizeof($res) > 0) { array_pop($res); };
         $idx = 0;
@@ -904,10 +1072,10 @@ class YColorLedCluster extends YFunction
     /**
      * Returns a list of integers with the current speed for specified blinking sequences.
      *
-     * @param seqIndex : index of the first sequence speed which should be returned
+     * @param integer $seqIndex : index of the first sequence speed which should be returned
      * @param count    : number of sequence speeds which should be returned
      *
-     * @return a list of integers, 0 for sequences turned off and 1 for sequences running
+     * @return Integer[] : a list of integers, 0 for sequences turned off and 1 for sequences running
      *
      * On failure, throws an exception or returns an empty array.
      */
@@ -918,7 +1086,7 @@ class YColorLedCluster extends YFunction
         // $idx                    is a int;
         // $lh                     is a int;
         // $ll                     is a int;
-        // may throw an exception
+
         $buff = $this->_download(sprintf('rgb.bin?typ=6&pos=%d&len=%d',$seqIndex,$count));
         while(sizeof($res) > 0) { array_pop($res); };
         $idx = 0;
@@ -934,10 +1102,10 @@ class YColorLedCluster extends YFunction
     /**
      * Returns a list of integers with the "auto-start at power on" flag state for specified blinking sequences.
      *
-     * @param seqIndex : index of the first blinking sequence which should be returned
+     * @param integer $seqIndex : index of the first blinking sequence which should be returned
      * @param count    : number of blinking sequences which should be returned
      *
-     * @return a list of integers, 0 for sequences turned off and 1 for sequences running
+     * @return Integer[] : a list of integers, 0 for sequences turned off and 1 for sequences running
      *
      * On failure, throws an exception or returns an empty array.
      */
@@ -947,7 +1115,7 @@ class YColorLedCluster extends YFunction
         $res = Array();         // intArr;
         // $idx                    is a int;
         // $started                is a int;
-        // may throw an exception
+
         $buff = $this->_download(sprintf('rgb.bin?typ=5&pos=%d&len=%d',$seqIndex,$count));
         while(sizeof($res) > 0) { array_pop($res); };
         $idx = 0;
@@ -962,10 +1130,10 @@ class YColorLedCluster extends YFunction
     /**
      * Returns a list of integers with the started state for specified blinking sequences.
      *
-     * @param seqIndex : index of the first blinking sequence which should be returned
+     * @param integer $seqIndex : index of the first blinking sequence which should be returned
      * @param count    : number of blinking sequences which should be returned
      *
-     * @return a list of integers, 0 for sequences turned off and 1 for sequences running
+     * @return Integer[] : a list of integers, 0 for sequences turned off and 1 for sequences running
      *
      * On failure, throws an exception or returns an empty array.
      */
@@ -975,7 +1143,7 @@ class YColorLedCluster extends YFunction
         $res = Array();         // intArr;
         // $idx                    is a int;
         // $started                is a int;
-        // may throw an exception
+
         $buff = $this->_download(sprintf('rgb.bin?typ=3&pos=%d&len=%d',$seqIndex,$count));
         while(sizeof($res) > 0) { array_pop($res); };
         $idx = 0;
@@ -987,11 +1155,89 @@ class YColorLedCluster extends YFunction
         return $res;
     }
 
+    public function hsl2rgbInt($temp1,$temp2,$temp3)
+    {
+        if ($temp3 >= 170) {
+            return intVal((($temp1 + 127)) / (255));
+        }
+        if ($temp3 > 42) {
+            if ($temp3 <= 127) {
+                return intVal((($temp2 + 127)) / (255));
+            }
+            $temp3 = 170 - $temp3;
+        }
+        return intVal((($temp1*255 + ($temp2-$temp1) * (6 * $temp3) + 32512)) / (65025));
+    }
+
+    public function hsl2rgb($hslValue)
+    {
+        // $R                      is a int;
+        // $G                      is a int;
+        // $B                      is a int;
+        // $H                      is a int;
+        // $S                      is a int;
+        // $L                      is a int;
+        // $temp1                  is a int;
+        // $temp2                  is a int;
+        // $temp3                  is a int;
+        // $res                    is a int;
+        $L = (($hslValue) & (0xff));
+        $S = (((($hslValue) >> (8))) & (0xff));
+        $H = (((($hslValue) >> (16))) & (0xff));
+        if ($S==0) {
+            $res = (($L) << (16))+(($L) << (8))+$L;
+            return $res;
+        }
+        if ($L<=127) {
+            $temp2 = $L * (255 + $S);
+        } else {
+            $temp2 = ($L+$S) * 255 - $L*$S;
+        }
+        $temp1 = 510 * $L - $temp2;
+        // R
+        $temp3 = ($H + 85);
+        if ($temp3 > 255) {
+            $temp3 = $temp3-255;
+        }
+        $R = $this->hsl2rgbInt($temp1, $temp2, $temp3);
+        // G
+        $temp3 = $H;
+        if ($temp3 > 255) {
+            $temp3 = $temp3-255;
+        }
+        $G = $this->hsl2rgbInt($temp1, $temp2, $temp3);
+        // B
+        if ($H >= 85) {
+            $temp3 = $H - 85 ;
+        } else {
+            $temp3 = $H + 170;
+        }
+        $B = $this->hsl2rgbInt($temp1, $temp2, $temp3);
+        // just in case
+        if ($R>255) {
+            $R=255;
+        }
+        if ($G>255) {
+            $G=255;
+        }
+        if ($B>255) {
+            $B=255;
+        }
+        $res = (($R) << (16))+(($G) << (8))+$B;
+        return $res;
+    }
+
     public function activeLedCount()
     { return $this->get_activeLedCount(); }
 
     public function setActiveLedCount($newval)
     { return $this->set_activeLedCount($newval); }
+
+    public function ledType()
+    { return $this->get_ledType(); }
+
+    public function setLedType($newval)
+    { return $this->set_ledType($newval); }
 
     public function maxLedCount()
     { return $this->get_maxLedCount(); }
@@ -1010,8 +1256,11 @@ class YColorLedCluster extends YFunction
 
     /**
      * Continues the enumeration of RGB LED clusters started using yFirstColorLedCluster().
+     * Caution: You can't make any assumption about the returned RGB LED clusters order.
+     * If you want to find a specific a RGB LED cluster, use ColorLedCluster.findColorLedCluster()
+     * and a hardwareID or a logical name.
      *
-     * @return a pointer to a YColorLedCluster object, corresponding to
+     * @return YColorLedCluster : a pointer to a YColorLedCluster object, corresponding to
      *         a RGB LED cluster currently online, or a null pointer
      *         if there are no more RGB LED clusters to enumerate.
      */
@@ -1020,15 +1269,15 @@ class YColorLedCluster extends YFunction
         if($resolve->errorType != YAPI_SUCCESS) return null;
         $next_hwid = YAPI::getNextHardwareId($this->_className, $resolve->result);
         if($next_hwid == null) return null;
-        return yFindColorLedCluster($next_hwid);
+        return self::FindColorLedCluster($next_hwid);
     }
 
     /**
      * Starts the enumeration of RGB LED clusters currently accessible.
-     * Use the method YColorLedCluster.nextColorLedCluster() to iterate on
+     * Use the method YColorLedCluster::nextColorLedCluster() to iterate on
      * next RGB LED clusters.
      *
-     * @return a pointer to a YColorLedCluster object, corresponding to
+     * @return YColorLedCluster : a pointer to a YColorLedCluster object, corresponding to
      *         the first RGB LED cluster currently online, or a null pointer
      *         if there are none.
      */
@@ -1042,7 +1291,7 @@ class YColorLedCluster extends YFunction
 
 };
 
-//--- (ColorLedCluster functions)
+//--- (YColorLedCluster functions)
 
 /**
  * Retrieves a RGB LED cluster for a given identifier.
@@ -1057,15 +1306,20 @@ class YColorLedCluster extends YFunction
  *
  * This function does not require that the RGB LED cluster is online at the time
  * it is invoked. The returned object is nevertheless valid.
- * Use the method YColorLedCluster.isOnline() to test if the RGB LED cluster is
+ * Use the method isOnline() to test if the RGB LED cluster is
  * indeed online at a given time. In case of ambiguity when looking for
  * a RGB LED cluster by logical name, no error is notified: the first instance
  * found is returned. The search is performed first by hardware name,
  * then by logical name.
  *
- * @param func : a string that uniquely characterizes the RGB LED cluster
+ * If a call to this object's is_online() method returns FALSE although
+ * you are certain that the matching device is plugged, make sure that you did
+ * call registerHub() at application initialization time.
  *
- * @return a YColorLedCluster object allowing you to drive the RGB LED cluster.
+ * @param string $func : a string that uniquely characterizes the RGB LED cluster, for instance
+ *         YRGBLED2.colorLedCluster.
+ *
+ * @return YColorLedCluster : a YColorLedCluster object allowing you to drive the RGB LED cluster.
  */
 function yFindColorLedCluster($func)
 {
@@ -1074,10 +1328,10 @@ function yFindColorLedCluster($func)
 
 /**
  * Starts the enumeration of RGB LED clusters currently accessible.
- * Use the method YColorLedCluster.nextColorLedCluster() to iterate on
+ * Use the method YColorLedCluster::nextColorLedCluster() to iterate on
  * next RGB LED clusters.
  *
- * @return a pointer to a YColorLedCluster object, corresponding to
+ * @return YColorLedCluster : a pointer to a YColorLedCluster object, corresponding to
  *         the first RGB LED cluster currently online, or a null pointer
  *         if there are none.
  */
@@ -1086,5 +1340,5 @@ function yFirstColorLedCluster()
     return YColorLedCluster::FirstColorLedCluster();
 }
 
-//--- (end of ColorLedCluster functions)
+//--- (end of YColorLedCluster functions)
 ?>

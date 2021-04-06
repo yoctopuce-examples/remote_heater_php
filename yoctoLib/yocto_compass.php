@@ -1,11 +1,11 @@
 <?php
 /*********************************************************************
  *
- * $Id: yocto_compass.php 23243 2016-02-23 14:13:12Z seb $
+ *  $Id: yocto_compass.php 43580 2021-01-26 17:46:01Z mvuilleu $
  *
- * Implements YCompass, the high-level API for Compass functions
+ *  Implements YCompass, the high-level API for Compass functions
  *
- * - - - - - - - - - License information: - - - - - - - - - 
+ *  - - - - - - - - - License information: - - - - - - - - -
  *
  *  Copyright (C) 2011 and beyond by Yoctopuce Sarl, Switzerland.
  *
@@ -24,7 +24,7 @@
  *  obligations.
  *
  *  THE SOFTWARE AND DOCUMENTATION ARE PROVIDED 'AS IS' WITHOUT
- *  WARRANTY OF ANY KIND, EITHER EXPRESS OR IMPLIED, INCLUDING 
+ *  WARRANTY OF ANY KIND, EITHER EXPRESS OR IMPLIED, INCLUDING
  *  WITHOUT LIMITATION, ANY WARRANTY OF MERCHANTABILITY, FITNESS
  *  FOR A PARTICULAR PURPOSE, TITLE AND NON-INFRINGEMENT. IN NO
  *  EVENT SHALL LICENSOR BE LIABLE FOR ANY INCIDENTAL, SPECIAL,
@@ -45,25 +45,23 @@ if(!defined('Y_AXIS_X'))                     define('Y_AXIS_X',                 
 if(!defined('Y_AXIS_Y'))                     define('Y_AXIS_Y',                    1);
 if(!defined('Y_AXIS_Z'))                     define('Y_AXIS_Z',                    2);
 if(!defined('Y_AXIS_INVALID'))               define('Y_AXIS_INVALID',              -1);
+if(!defined('Y_BANDWIDTH_INVALID'))          define('Y_BANDWIDTH_INVALID',         YAPI_INVALID_UINT);
 if(!defined('Y_MAGNETICHEADING_INVALID'))    define('Y_MAGNETICHEADING_INVALID',   YAPI_INVALID_DOUBLE);
 //--- (end of YCompass definitions)
+    #--- (YCompass yapiwrapper)
+   #--- (end of YCompass yapiwrapper)
 
 //--- (YCompass declaration)
 /**
- * YCompass Class: Compass function interface
+ * YCompass Class: compass function control interface, available for instance in the Yocto-3D-V2
  *
- * The YSensor class is the parent class for all Yoctopuce sensors. It can be
- * used to read the current value and unit of any sensor, read the min/max
- * value, configure autonomous recording frequency and access recorded data.
- * It also provide a function to register a callback invoked each time the
- * observed value changes, or at a predefined interval. Using this class rather
- * than a specific subclass makes it possible to create generic applications
- * that work with any Yoctopuce sensor, even those that do not yet exist.
- * Note: The YAnButton class is the only analog input which does not inherit
- * from YSensor.
+ * The YCompass class allows you to read and configure Yoctopuce compass functions.
+ * It inherits from YSensor class the core functions to read measurements,
+ * to register callback functions, and to access the autonomous datalogger.
  */
 class YCompass extends YSensor
 {
+    const BANDWIDTH_INVALID              = YAPI_INVALID_UINT;
     const AXIS_X                         = 0;
     const AXIS_Y                         = 1;
     const AXIS_Z                         = 2;
@@ -72,6 +70,7 @@ class YCompass extends YSensor
     //--- (end of YCompass declaration)
 
     //--- (YCompass attributes)
+    protected $_bandwidth                = Y_BANDWIDTH_INVALID;          // UInt31
     protected $_axis                     = Y_AXIS_INVALID;               // Axis
     protected $_magneticHeading          = Y_MAGNETICHEADING_INVALID;    // MeasureVal
     //--- (end of YCompass attributes)
@@ -90,6 +89,9 @@ class YCompass extends YSensor
     function _parseAttr($name, $val)
     {
         switch($name) {
+        case 'bandwidth':
+            $this->_bandwidth = intval($val);
+            return 1;
         case 'axis':
             $this->_axis = intval($val);
             return 1;
@@ -100,35 +102,77 @@ class YCompass extends YSensor
         return parent::_parseAttr($name, $val);
     }
 
+    /**
+     * Returns the measure update frequency, measured in Hz.
+     *
+     * @return integer : an integer corresponding to the measure update frequency, measured in Hz
+     *
+     * On failure, throws an exception or returns YCompass::BANDWIDTH_INVALID.
+     */
+    public function get_bandwidth()
+    {
+        // $res                    is a int;
+        if ($this->_cacheExpiration <= YAPI::GetTickCount()) {
+            if ($this->load(YAPI::$_yapiContext->GetCacheValidity()) != YAPI_SUCCESS) {
+                return Y_BANDWIDTH_INVALID;
+            }
+        }
+        $res = $this->_bandwidth;
+        return $res;
+    }
+
+    /**
+     * Changes the measure update frequency, measured in Hz. When the
+     * frequency is lower, the device performs averaging.
+     * Remember to call the saveToFlash()
+     * method of the module if the modification must be kept.
+     *
+     * @param integer $newval : an integer corresponding to the measure update frequency, measured in Hz
+     *
+     * @return integer : YAPI::SUCCESS if the call succeeds.
+     *
+     * On failure, throws an exception or returns a negative error code.
+     */
+    public function set_bandwidth($newval)
+    {
+        $rest_val = strval($newval);
+        return $this->_setAttr("bandwidth",$rest_val);
+    }
+
     public function get_axis()
     {
+        // $res                    is a enumAXIS;
         if ($this->_cacheExpiration <= YAPI::GetTickCount()) {
-            if ($this->load(YAPI::$defaultCacheValidity) != YAPI_SUCCESS) {
+            if ($this->load(YAPI::$_yapiContext->GetCacheValidity()) != YAPI_SUCCESS) {
                 return Y_AXIS_INVALID;
             }
         }
-        return $this->_axis;
+        $res = $this->_axis;
+        return $res;
     }
 
     /**
      * Returns the magnetic heading, regardless of the configured bearing.
      *
-     * @return a floating point number corresponding to the magnetic heading, regardless of the configured bearing
+     * @return double : a floating point number corresponding to the magnetic heading, regardless of the
+     * configured bearing
      *
-     * On failure, throws an exception or returns Y_MAGNETICHEADING_INVALID.
+     * On failure, throws an exception or returns YCompass::MAGNETICHEADING_INVALID.
      */
     public function get_magneticHeading()
     {
+        // $res                    is a double;
         if ($this->_cacheExpiration <= YAPI::GetTickCount()) {
-            if ($this->load(YAPI::$defaultCacheValidity) != YAPI_SUCCESS) {
+            if ($this->load(YAPI::$_yapiContext->GetCacheValidity()) != YAPI_SUCCESS) {
                 return Y_MAGNETICHEADING_INVALID;
             }
         }
-        return $this->_magneticHeading;
+        $res = $this->_magneticHeading;
+        return $res;
     }
 
     /**
-     * Retrieves a compass for a given identifier.
+     * Retrieves a compass function for a given identifier.
      * The identifier can be specified using several formats:
      * <ul>
      * <li>FunctionLogicalName</li>
@@ -138,17 +182,22 @@ class YCompass extends YSensor
      * <li>ModuleLogicalName.FunctionLogicalName</li>
      * </ul>
      *
-     * This function does not require that the compass is online at the time
+     * This function does not require that the compass function is online at the time
      * it is invoked. The returned object is nevertheless valid.
-     * Use the method YCompass.isOnline() to test if the compass is
+     * Use the method isOnline() to test if the compass function is
      * indeed online at a given time. In case of ambiguity when looking for
-     * a compass by logical name, no error is notified: the first instance
+     * a compass function by logical name, no error is notified: the first instance
      * found is returned. The search is performed first by hardware name,
      * then by logical name.
      *
-     * @param func : a string that uniquely characterizes the compass
+     * If a call to this object's is_online() method returns FALSE although
+     * you are certain that the matching device is plugged, make sure that you did
+     * call registerHub() at application initialization time.
      *
-     * @return a YCompass object allowing you to drive the compass.
+     * @param string $func : a string that uniquely characterizes the compass function, for instance
+     *         Y3DMK002.compass.
+     *
+     * @return YCompass : a YCompass object allowing you to drive the compass function.
      */
     public static function FindCompass($func)
     {
@@ -161,6 +210,12 @@ class YCompass extends YSensor
         return $obj;
     }
 
+    public function bandwidth()
+    { return $this->get_bandwidth(); }
+
+    public function setBandwidth($newval)
+    { return $this->set_bandwidth($newval); }
+
     public function axis()
     { return $this->get_axis(); }
 
@@ -168,27 +223,30 @@ class YCompass extends YSensor
     { return $this->get_magneticHeading(); }
 
     /**
-     * Continues the enumeration of compasses started using yFirstCompass().
+     * Continues the enumeration of compass functions started using yFirstCompass().
+     * Caution: You can't make any assumption about the returned compass functions order.
+     * If you want to find a specific a compass function, use Compass.findCompass()
+     * and a hardwareID or a logical name.
      *
-     * @return a pointer to a YCompass object, corresponding to
-     *         a compass currently online, or a null pointer
-     *         if there are no more compasses to enumerate.
+     * @return YCompass : a pointer to a YCompass object, corresponding to
+     *         a compass function currently online, or a null pointer
+     *         if there are no more compass functions to enumerate.
      */
     public function nextCompass()
     {   $resolve = YAPI::resolveFunction($this->_className, $this->_func);
         if($resolve->errorType != YAPI_SUCCESS) return null;
         $next_hwid = YAPI::getNextHardwareId($this->_className, $resolve->result);
         if($next_hwid == null) return null;
-        return yFindCompass($next_hwid);
+        return self::FindCompass($next_hwid);
     }
 
     /**
-     * Starts the enumeration of compasses currently accessible.
-     * Use the method YCompass.nextCompass() to iterate on
-     * next compasses.
+     * Starts the enumeration of compass functions currently accessible.
+     * Use the method YCompass::nextCompass() to iterate on
+     * next compass functions.
      *
-     * @return a pointer to a YCompass object, corresponding to
-     *         the first compass currently online, or a null pointer
+     * @return YCompass : a pointer to a YCompass object, corresponding to
+     *         the first compass function currently online, or a null pointer
      *         if there are none.
      */
     public static function FirstCompass()
@@ -201,10 +259,10 @@ class YCompass extends YSensor
 
 };
 
-//--- (Compass functions)
+//--- (YCompass functions)
 
 /**
- * Retrieves a compass for a given identifier.
+ * Retrieves a compass function for a given identifier.
  * The identifier can be specified using several formats:
  * <ul>
  * <li>FunctionLogicalName</li>
@@ -214,17 +272,22 @@ class YCompass extends YSensor
  * <li>ModuleLogicalName.FunctionLogicalName</li>
  * </ul>
  *
- * This function does not require that the compass is online at the time
+ * This function does not require that the compass function is online at the time
  * it is invoked. The returned object is nevertheless valid.
- * Use the method YCompass.isOnline() to test if the compass is
+ * Use the method isOnline() to test if the compass function is
  * indeed online at a given time. In case of ambiguity when looking for
- * a compass by logical name, no error is notified: the first instance
+ * a compass function by logical name, no error is notified: the first instance
  * found is returned. The search is performed first by hardware name,
  * then by logical name.
  *
- * @param func : a string that uniquely characterizes the compass
+ * If a call to this object's is_online() method returns FALSE although
+ * you are certain that the matching device is plugged, make sure that you did
+ * call registerHub() at application initialization time.
  *
- * @return a YCompass object allowing you to drive the compass.
+ * @param string $func : a string that uniquely characterizes the compass function, for instance
+ *         Y3DMK002.compass.
+ *
+ * @return YCompass : a YCompass object allowing you to drive the compass function.
  */
 function yFindCompass($func)
 {
@@ -232,12 +295,12 @@ function yFindCompass($func)
 }
 
 /**
- * Starts the enumeration of compasses currently accessible.
- * Use the method YCompass.nextCompass() to iterate on
- * next compasses.
+ * Starts the enumeration of compass functions currently accessible.
+ * Use the method YCompass::nextCompass() to iterate on
+ * next compass functions.
  *
- * @return a pointer to a YCompass object, corresponding to
- *         the first compass currently online, or a null pointer
+ * @return YCompass : a pointer to a YCompass object, corresponding to
+ *         the first compass function currently online, or a null pointer
  *         if there are none.
  */
 function yFirstCompass()
@@ -245,5 +308,5 @@ function yFirstCompass()
     return YCompass::FirstCompass();
 }
 
-//--- (end of Compass functions)
+//--- (end of YCompass functions)
 ?>

@@ -1,11 +1,11 @@
 <?php
 /*********************************************************************
  *
- * $Id: yocto_carbondioxide.php 23243 2016-02-23 14:13:12Z seb $
+ *  $Id: yocto_carbondioxide.php 44175 2021-03-11 11:27:12Z mvuilleu $
  *
- * Implements YCarbonDioxide, the high-level API for CarbonDioxide functions
+ *  Implements YCarbonDioxide, the high-level API for CarbonDioxide functions
  *
- * - - - - - - - - - License information: - - - - - - - - - 
+ *  - - - - - - - - - License information: - - - - - - - - -
  *
  *  Copyright (C) 2011 and beyond by Yoctopuce Sarl, Switzerland.
  *
@@ -24,7 +24,7 @@
  *  obligations.
  *
  *  THE SOFTWARE AND DOCUMENTATION ARE PROVIDED 'AS IS' WITHOUT
- *  WARRANTY OF ANY KIND, EITHER EXPRESS OR IMPLIED, INCLUDING 
+ *  WARRANTY OF ANY KIND, EITHER EXPRESS OR IMPLIED, INCLUDING
  *  WITHOUT LIMITATION, ANY WARRANTY OF MERCHANTABILITY, FITNESS
  *  FOR A PARTICULAR PURPOSE, TITLE AND NON-INFRINGEMENT. IN NO
  *  EVENT SHALL LICENSOR BE LIABLE FOR ANY INCIDENTAL, SPECIAL,
@@ -41,27 +41,29 @@
 //--- (YCarbonDioxide return codes)
 //--- (end of YCarbonDioxide return codes)
 //--- (YCarbonDioxide definitions)
-if(!defined('Y_ABCPERIOD_INVALID'))          define('Y_ABCPERIOD_INVALID',         YAPI_INVALID_INT);
+if(!defined('Y_ABCPERIOD_INVALID'))          define('Y_ABCPERIOD_INVALID',         YAPI_INVALID_UINT);
 if(!defined('Y_COMMAND_INVALID'))            define('Y_COMMAND_INVALID',           YAPI_INVALID_STRING);
 //--- (end of YCarbonDioxide definitions)
+    #--- (YCarbonDioxide yapiwrapper)
+   #--- (end of YCarbonDioxide yapiwrapper)
 
 //--- (YCarbonDioxide declaration)
 /**
- * YCarbonDioxide Class: CarbonDioxide function interface
+ * YCarbonDioxide Class: CO2 sensor control interface, available for instance in the Yocto-CO2-V2
  *
- * The Yoctopuce class YCarbonDioxide allows you to read and configure Yoctopuce CO2
- * sensors. It inherits from YSensor class the core functions to read measurements,
- * register callback functions, access to the autonomous datalogger.
- * This class adds the ability to perform manual calibration if reuired.
+ * The YCarbonDioxide class allows you to read and configure Yoctopuce CO2 sensors.
+ * It inherits from YSensor class the core functions to read measurements,
+ * to register callback functions, and to access the autonomous datalogger.
+ * This class adds the ability to perform manual calibration if required.
  */
 class YCarbonDioxide extends YSensor
 {
-    const ABCPERIOD_INVALID              = YAPI_INVALID_INT;
+    const ABCPERIOD_INVALID              = YAPI_INVALID_UINT;
     const COMMAND_INVALID                = YAPI_INVALID_STRING;
     //--- (end of YCarbonDioxide declaration)
 
     //--- (YCarbonDioxide attributes)
-    protected $_abcPeriod                = Y_ABCPERIOD_INVALID;          // Int
+    protected $_abcPeriod                = Y_ABCPERIOD_INVALID;          // UInt31
     protected $_command                  = Y_COMMAND_INVALID;            // Text
     //--- (end of YCarbonDioxide attributes)
 
@@ -93,30 +95,33 @@ class YCarbonDioxide extends YSensor
      * Returns the Automatic Baseline Calibration period, in hours. A negative value
      * means that automatic baseline calibration is disabled.
      *
-     * @return an integer corresponding to the Automatic Baseline Calibration period, in hours
+     * @return integer : an integer corresponding to the Automatic Baseline Calibration period, in hours
      *
-     * On failure, throws an exception or returns Y_ABCPERIOD_INVALID.
+     * On failure, throws an exception or returns YCarbonDioxide::ABCPERIOD_INVALID.
      */
     public function get_abcPeriod()
     {
+        // $res                    is a int;
         if ($this->_cacheExpiration <= YAPI::GetTickCount()) {
-            if ($this->load(YAPI::$defaultCacheValidity) != YAPI_SUCCESS) {
+            if ($this->load(YAPI::$_yapiContext->GetCacheValidity()) != YAPI_SUCCESS) {
                 return Y_ABCPERIOD_INVALID;
             }
         }
-        return $this->_abcPeriod;
+        $res = $this->_abcPeriod;
+        return $res;
     }
 
     /**
-     * Modifies Automatic Baseline Calibration period, in hours. If you need
+     * Changes Automatic Baseline Calibration period, in hours. If you need
      * to disable automatic baseline calibration (for instance when using the
-     * sensor in an environment that is constantly above 400ppm CO2), set the
-     * period to -1. Remember to call the saveToFlash() method of the
+     * sensor in an environment that is constantly above 400 ppm CO2), set the
+     * period to -1. For the Yocto-CO2-V2, the only possible values are 24 and -1.
+     * Remember to call the saveToFlash() method of the
      * module if the modification must be kept.
      *
-     * @param newval : an integer
+     * @param integer $newval : an integer corresponding to Automatic Baseline Calibration period, in hours
      *
-     * @return YAPI_SUCCESS if the call succeeds.
+     * @return integer : YAPI::SUCCESS if the call succeeds.
      *
      * On failure, throws an exception or returns a negative error code.
      */
@@ -128,12 +133,14 @@ class YCarbonDioxide extends YSensor
 
     public function get_command()
     {
+        // $res                    is a string;
         if ($this->_cacheExpiration <= YAPI::GetTickCount()) {
-            if ($this->load(YAPI::$defaultCacheValidity) != YAPI_SUCCESS) {
+            if ($this->load(YAPI::$_yapiContext->GetCacheValidity()) != YAPI_SUCCESS) {
                 return Y_COMMAND_INVALID;
             }
         }
-        return $this->_command;
+        $res = $this->_command;
+        return $res;
     }
 
     public function set_command($newval)
@@ -155,15 +162,20 @@ class YCarbonDioxide extends YSensor
      *
      * This function does not require that the CO2 sensor is online at the time
      * it is invoked. The returned object is nevertheless valid.
-     * Use the method YCarbonDioxide.isOnline() to test if the CO2 sensor is
+     * Use the method isOnline() to test if the CO2 sensor is
      * indeed online at a given time. In case of ambiguity when looking for
      * a CO2 sensor by logical name, no error is notified: the first instance
      * found is returned. The search is performed first by hardware name,
      * then by logical name.
      *
-     * @param func : a string that uniquely characterizes the CO2 sensor
+     * If a call to this object's is_online() method returns FALSE although
+     * you are certain that the matching device is plugged, make sure that you did
+     * call registerHub() at application initialization time.
      *
-     * @return a YCarbonDioxide object allowing you to drive the CO2 sensor.
+     * @param string $func : a string that uniquely characterizes the CO2 sensor, for instance
+     *         YCO2MK02.carbonDioxide.
+     *
+     * @return YCarbonDioxide : a YCarbonDioxide object allowing you to drive the CO2 sensor.
      */
     public static function FindCarbonDioxide($func)
     {
@@ -177,26 +189,50 @@ class YCarbonDioxide extends YSensor
     }
 
     /**
+     * Triggers a forced calibration of the sensor at a given CO2 level, specified
+     * between 400ppm and 2000ppm. Before invoking this command, the sensor must
+     * have been maintained within the specified CO2 density during at least two
+     * minutes.
+     *
+     * @param double $refVal : reference CO2 density for the calibration
+     *
+     * @return integer : YAPI::SUCCESS if the call succeeds.
+     *
+     * On failure, throws an exception or returns a negative error code.
+     */
+    public function triggerForcedCalibration($refVal)
+    {
+        return $this->set_command(sprintf('F%dC', round(1000*$refVal)));
+    }
+
+    /**
      * Triggers a baseline calibration at standard CO2 ambiant level (400ppm).
      * It is normally not necessary to manually calibrate the sensor, because
      * the built-in automatic baseline calibration procedure will automatically
      * fix any long-term drift based on the lowest level of CO2 observed over the
-     * automatic calibration period. However, if you disable automatic baseline
-     * calibration, you may want to manually trigger a calibration from time to
+     * automatic calibration period. However, if automatic baseline calibration
+     * is disabled, you may want to manually trigger a calibration from time to
      * time. Before starting a baseline calibration, make sure to put the sensor
-     * in a standard environment (e.g. outside in fresh air) at around 400ppm.
+     * in a standard environment (e.g. outside in fresh air) at around 400 ppm
+     * for at least two minutes.
      *
-     * @return YAPI_SUCCESS if the call succeeds.
+     * @return integer : YAPI::SUCCESS if the call succeeds.
      *
      * On failure, throws an exception or returns a negative error code.
      */
-    public function triggetBaselineCalibration()
+    public function triggerBaselineCalibration()
     {
         return $this->set_command('BC');
     }
 
+    public function triggetBaselineCalibration()
+    {
+        return $this->triggerBaselineCalibration();
+    }
+
     /**
-     * Triggers a zero calibration of the sensor on carbon dioxide-free air.
+     * Triggers a zero calibration of the sensor on carbon dioxide-free air -
+     * for use with first generation Yocto-CO2 only.
      * It is normally not necessary to manually calibrate the sensor, because
      * the built-in automatic baseline calibration procedure will automatically
      * fix any long-term drift based on the lowest level of CO2 observed over the
@@ -207,13 +243,18 @@ class YCarbonDioxide extends YSensor
      * connected to the sensor. Please contact support@yoctopuce.com for more details
      * on the zero calibration procedure.
      *
-     * @return YAPI_SUCCESS if the call succeeds.
+     * @return integer : YAPI::SUCCESS if the call succeeds.
      *
      * On failure, throws an exception or returns a negative error code.
      */
-    public function triggetZeroCalibration()
+    public function triggerZeroCalibration()
     {
         return $this->set_command('ZC');
+    }
+
+    public function triggetZeroCalibration()
+    {
+        return $this->triggerZeroCalibration();
     }
 
     public function abcPeriod()
@@ -230,8 +271,11 @@ class YCarbonDioxide extends YSensor
 
     /**
      * Continues the enumeration of CO2 sensors started using yFirstCarbonDioxide().
+     * Caution: You can't make any assumption about the returned CO2 sensors order.
+     * If you want to find a specific a CO2 sensor, use CarbonDioxide.findCarbonDioxide()
+     * and a hardwareID or a logical name.
      *
-     * @return a pointer to a YCarbonDioxide object, corresponding to
+     * @return YCarbonDioxide : a pointer to a YCarbonDioxide object, corresponding to
      *         a CO2 sensor currently online, or a null pointer
      *         if there are no more CO2 sensors to enumerate.
      */
@@ -240,15 +284,15 @@ class YCarbonDioxide extends YSensor
         if($resolve->errorType != YAPI_SUCCESS) return null;
         $next_hwid = YAPI::getNextHardwareId($this->_className, $resolve->result);
         if($next_hwid == null) return null;
-        return yFindCarbonDioxide($next_hwid);
+        return self::FindCarbonDioxide($next_hwid);
     }
 
     /**
      * Starts the enumeration of CO2 sensors currently accessible.
-     * Use the method YCarbonDioxide.nextCarbonDioxide() to iterate on
+     * Use the method YCarbonDioxide::nextCarbonDioxide() to iterate on
      * next CO2 sensors.
      *
-     * @return a pointer to a YCarbonDioxide object, corresponding to
+     * @return YCarbonDioxide : a pointer to a YCarbonDioxide object, corresponding to
      *         the first CO2 sensor currently online, or a null pointer
      *         if there are none.
      */
@@ -262,7 +306,7 @@ class YCarbonDioxide extends YSensor
 
 };
 
-//--- (CarbonDioxide functions)
+//--- (YCarbonDioxide functions)
 
 /**
  * Retrieves a CO2 sensor for a given identifier.
@@ -277,15 +321,20 @@ class YCarbonDioxide extends YSensor
  *
  * This function does not require that the CO2 sensor is online at the time
  * it is invoked. The returned object is nevertheless valid.
- * Use the method YCarbonDioxide.isOnline() to test if the CO2 sensor is
+ * Use the method isOnline() to test if the CO2 sensor is
  * indeed online at a given time. In case of ambiguity when looking for
  * a CO2 sensor by logical name, no error is notified: the first instance
  * found is returned. The search is performed first by hardware name,
  * then by logical name.
  *
- * @param func : a string that uniquely characterizes the CO2 sensor
+ * If a call to this object's is_online() method returns FALSE although
+ * you are certain that the matching device is plugged, make sure that you did
+ * call registerHub() at application initialization time.
  *
- * @return a YCarbonDioxide object allowing you to drive the CO2 sensor.
+ * @param string $func : a string that uniquely characterizes the CO2 sensor, for instance
+ *         YCO2MK02.carbonDioxide.
+ *
+ * @return YCarbonDioxide : a YCarbonDioxide object allowing you to drive the CO2 sensor.
  */
 function yFindCarbonDioxide($func)
 {
@@ -294,10 +343,10 @@ function yFindCarbonDioxide($func)
 
 /**
  * Starts the enumeration of CO2 sensors currently accessible.
- * Use the method YCarbonDioxide.nextCarbonDioxide() to iterate on
+ * Use the method YCarbonDioxide::nextCarbonDioxide() to iterate on
  * next CO2 sensors.
  *
- * @return a pointer to a YCarbonDioxide object, corresponding to
+ * @return YCarbonDioxide : a pointer to a YCarbonDioxide object, corresponding to
  *         the first CO2 sensor currently online, or a null pointer
  *         if there are none.
  */
@@ -306,5 +355,5 @@ function yFirstCarbonDioxide()
     return YCarbonDioxide::FirstCarbonDioxide();
 }
 
-//--- (end of CarbonDioxide functions)
+//--- (end of YCarbonDioxide functions)
 ?>

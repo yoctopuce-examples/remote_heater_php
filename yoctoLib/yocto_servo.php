@@ -1,11 +1,11 @@
 <?php
 /*********************************************************************
  *
- * $Id: yocto_servo.php 23243 2016-02-23 14:13:12Z seb $
+ *  $Id: yocto_servo.php 43580 2021-01-26 17:46:01Z mvuilleu $
  *
- * Implements YServo, the high-level API for Servo functions
+ *  Implements YServo, the high-level API for Servo functions
  *
- * - - - - - - - - - License information: - - - - - - - - - 
+ *  - - - - - - - - - License information: - - - - - - - - -
  *
  *  Copyright (C) 2011 and beyond by Yoctopuce Sarl, Switzerland.
  *
@@ -24,7 +24,7 @@
  *  obligations.
  *
  *  THE SOFTWARE AND DOCUMENTATION ARE PROVIDED 'AS IS' WITHOUT
- *  WARRANTY OF ANY KIND, EITHER EXPRESS OR IMPLIED, INCLUDING 
+ *  WARRANTY OF ANY KIND, EITHER EXPRESS OR IMPLIED, INCLUDING
  *  WITHOUT LIMITATION, ANY WARRANTY OF MERCHANTABILITY, FITNESS
  *  FOR A PARTICULAR PURPOSE, TITLE AND NON-INFRINGEMENT. IN NO
  *  EVENT SHALL LICENSOR BE LIABLE FOR ANY INCIDENTAL, SPECIAL,
@@ -53,12 +53,15 @@ if(!defined('Y_NEUTRAL_INVALID'))            define('Y_NEUTRAL_INVALID',        
 if(!defined('Y_MOVE_INVALID'))               define('Y_MOVE_INVALID',              null);
 if(!defined('Y_POSITIONATPOWERON_INVALID'))  define('Y_POSITIONATPOWERON_INVALID', YAPI_INVALID_INT);
 //--- (end of YServo definitions)
+    #--- (YServo yapiwrapper)
+   #--- (end of YServo yapiwrapper)
 
 //--- (YServo declaration)
 /**
- * YServo Class: Servo function interface
+ * YServo Class: RC servo motor control interface, available for instance in the Yocto-Servo
  *
- * Yoctopuce application programming interface allows you not only to move
+ * The YServo class is designed to drive remote-control servo motors
+ * outputs. This class allows you not only to move
  * a servo to a given position, but also to specify the time interval
  * in which the move should be performed. This makes it possible to
  * synchronize two servos involved in a same move.
@@ -130,26 +133,28 @@ class YServo extends YFunction
     /**
      * Returns the current servo position.
      *
-     * @return an integer corresponding to the current servo position
+     * @return integer : an integer corresponding to the current servo position
      *
-     * On failure, throws an exception or returns Y_POSITION_INVALID.
+     * On failure, throws an exception or returns YServo::POSITION_INVALID.
      */
     public function get_position()
     {
+        // $res                    is a int;
         if ($this->_cacheExpiration <= YAPI::GetTickCount()) {
-            if ($this->load(YAPI::$defaultCacheValidity) != YAPI_SUCCESS) {
+            if ($this->load(YAPI::$_yapiContext->GetCacheValidity()) != YAPI_SUCCESS) {
                 return Y_POSITION_INVALID;
             }
         }
-        return $this->_position;
+        $res = $this->_position;
+        return $res;
     }
 
     /**
      * Changes immediately the servo driving position.
      *
-     * @param newval : an integer corresponding to immediately the servo driving position
+     * @param integer $newval : an integer corresponding to immediately the servo driving position
      *
-     * @return YAPI_SUCCESS if the call succeeds.
+     * @return integer : YAPI::SUCCESS if the call succeeds.
      *
      * On failure, throws an exception or returns a negative error code.
      */
@@ -160,28 +165,31 @@ class YServo extends YFunction
     }
 
     /**
-     * Returns the state of the servos.
+     * Returns the state of the RC servo motors.
      *
-     * @return either Y_ENABLED_FALSE or Y_ENABLED_TRUE, according to the state of the servos
+     * @return integer : either YServo::ENABLED_FALSE or YServo::ENABLED_TRUE, according to the state of the
+     * RC servo motors
      *
-     * On failure, throws an exception or returns Y_ENABLED_INVALID.
+     * On failure, throws an exception or returns YServo::ENABLED_INVALID.
      */
     public function get_enabled()
     {
+        // $res                    is a enumBOOL;
         if ($this->_cacheExpiration <= YAPI::GetTickCount()) {
-            if ($this->load(YAPI::$defaultCacheValidity) != YAPI_SUCCESS) {
+            if ($this->load(YAPI::$_yapiContext->GetCacheValidity()) != YAPI_SUCCESS) {
                 return Y_ENABLED_INVALID;
             }
         }
-        return $this->_enabled;
+        $res = $this->_enabled;
+        return $res;
     }
 
     /**
-     * Stops or starts the servo.
+     * Stops or starts the RC servo motor.
      *
-     * @param newval : either Y_ENABLED_FALSE or Y_ENABLED_TRUE
+     * @param integer $newval : either YServo::ENABLED_FALSE or YServo::ENABLED_TRUE
      *
-     * @return YAPI_SUCCESS if the call succeeds.
+     * @return integer : YAPI::SUCCESS if the call succeeds.
      *
      * On failure, throws an exception or returns a negative error code.
      */
@@ -194,18 +202,20 @@ class YServo extends YFunction
     /**
      * Returns the current range of use of the servo.
      *
-     * @return an integer corresponding to the current range of use of the servo
+     * @return integer : an integer corresponding to the current range of use of the servo
      *
-     * On failure, throws an exception or returns Y_RANGE_INVALID.
+     * On failure, throws an exception or returns YServo::RANGE_INVALID.
      */
     public function get_range()
     {
+        // $res                    is a int;
         if ($this->_cacheExpiration <= YAPI::GetTickCount()) {
-            if ($this->load(YAPI::$defaultCacheValidity) != YAPI_SUCCESS) {
+            if ($this->load(YAPI::$_yapiContext->GetCacheValidity()) != YAPI_SUCCESS) {
                 return Y_RANGE_INVALID;
             }
         }
-        return $this->_range;
+        $res = $this->_range;
+        return $res;
     }
 
     /**
@@ -217,9 +227,9 @@ class YServo extends YFunction
      * is likely to damage the servo. Remember to call the matching module
      * saveToFlash() method, otherwise this call will have no effect.
      *
-     * @param newval : an integer corresponding to the range of use of the servo, specified in per cents
+     * @param integer $newval : an integer corresponding to the range of use of the servo, specified in per cents
      *
-     * @return YAPI_SUCCESS if the call succeeds.
+     * @return integer : YAPI::SUCCESS if the call succeeds.
      *
      * On failure, throws an exception or returns a negative error code.
      */
@@ -232,18 +242,20 @@ class YServo extends YFunction
     /**
      * Returns the duration in microseconds of a neutral pulse for the servo.
      *
-     * @return an integer corresponding to the duration in microseconds of a neutral pulse for the servo
+     * @return integer : an integer corresponding to the duration in microseconds of a neutral pulse for the servo
      *
-     * On failure, throws an exception or returns Y_NEUTRAL_INVALID.
+     * On failure, throws an exception or returns YServo::NEUTRAL_INVALID.
      */
     public function get_neutral()
     {
+        // $res                    is a int;
         if ($this->_cacheExpiration <= YAPI::GetTickCount()) {
-            if ($this->load(YAPI::$defaultCacheValidity) != YAPI_SUCCESS) {
+            if ($this->load(YAPI::$_yapiContext->GetCacheValidity()) != YAPI_SUCCESS) {
                 return Y_NEUTRAL_INVALID;
             }
         }
-        return $this->_neutral;
+        $res = $this->_neutral;
+        return $res;
     }
 
     /**
@@ -254,10 +266,10 @@ class YServo extends YFunction
      * likely to damage the servo. Remember to call the matching module
      * saveToFlash() method, otherwise this call will have no effect.
      *
-     * @param newval : an integer corresponding to the duration of the pulse corresponding to the neutral
-     * position of the servo
+     * @param integer $newval : an integer corresponding to the duration of the pulse corresponding to the
+     * neutral position of the servo
      *
-     * @return YAPI_SUCCESS if the call succeeds.
+     * @return integer : YAPI::SUCCESS if the call succeeds.
      *
      * On failure, throws an exception or returns a negative error code.
      */
@@ -269,12 +281,14 @@ class YServo extends YFunction
 
     public function get_move()
     {
+        // $res                    is a YMove;
         if ($this->_cacheExpiration <= YAPI::GetTickCount()) {
-            if ($this->load(YAPI::$defaultCacheValidity) != YAPI_SUCCESS) {
+            if ($this->load(YAPI::$_yapiContext->GetCacheValidity()) != YAPI_SUCCESS) {
                 return Y_MOVE_INVALID;
             }
         }
-        return $this->_move;
+        $res = $this->_move;
+        return $res;
     }
 
     public function set_move($newval)
@@ -287,9 +301,9 @@ class YServo extends YFunction
      * Performs a smooth move at constant speed toward a given position.
      *
      * @param target      : new position at the end of the move
-     * @param ms_duration : total duration of the move, in milliseconds
+     * @param integer $ms_duration : total duration of the move, in milliseconds
      *
-     * @return YAPI_SUCCESS if the call succeeds.
+     * @return integer : YAPI::SUCCESS if the call succeeds.
      *
      * On failure, throws an exception or returns a negative error code.
      */
@@ -302,27 +316,29 @@ class YServo extends YFunction
     /**
      * Returns the servo position at device power up.
      *
-     * @return an integer corresponding to the servo position at device power up
+     * @return integer : an integer corresponding to the servo position at device power up
      *
-     * On failure, throws an exception or returns Y_POSITIONATPOWERON_INVALID.
+     * On failure, throws an exception or returns YServo::POSITIONATPOWERON_INVALID.
      */
     public function get_positionAtPowerOn()
     {
+        // $res                    is a int;
         if ($this->_cacheExpiration <= YAPI::GetTickCount()) {
-            if ($this->load(YAPI::$defaultCacheValidity) != YAPI_SUCCESS) {
+            if ($this->load(YAPI::$_yapiContext->GetCacheValidity()) != YAPI_SUCCESS) {
                 return Y_POSITIONATPOWERON_INVALID;
             }
         }
-        return $this->_positionAtPowerOn;
+        $res = $this->_positionAtPowerOn;
+        return $res;
     }
 
     /**
      * Configure the servo position at device power up. Remember to call the matching
      * module saveToFlash() method, otherwise this call will have no effect.
      *
-     * @param newval : an integer
+     * @param integer $newval : an integer
      *
-     * @return YAPI_SUCCESS if the call succeeds.
+     * @return integer : YAPI::SUCCESS if the call succeeds.
      *
      * On failure, throws an exception or returns a negative error code.
      */
@@ -335,28 +351,30 @@ class YServo extends YFunction
     /**
      * Returns the servo signal generator state at power up.
      *
-     * @return either Y_ENABLEDATPOWERON_FALSE or Y_ENABLEDATPOWERON_TRUE, according to the servo signal
-     * generator state at power up
+     * @return integer : either YServo::ENABLEDATPOWERON_FALSE or YServo::ENABLEDATPOWERON_TRUE, according
+     * to the servo signal generator state at power up
      *
-     * On failure, throws an exception or returns Y_ENABLEDATPOWERON_INVALID.
+     * On failure, throws an exception or returns YServo::ENABLEDATPOWERON_INVALID.
      */
     public function get_enabledAtPowerOn()
     {
+        // $res                    is a enumBOOL;
         if ($this->_cacheExpiration <= YAPI::GetTickCount()) {
-            if ($this->load(YAPI::$defaultCacheValidity) != YAPI_SUCCESS) {
+            if ($this->load(YAPI::$_yapiContext->GetCacheValidity()) != YAPI_SUCCESS) {
                 return Y_ENABLEDATPOWERON_INVALID;
             }
         }
-        return $this->_enabledAtPowerOn;
+        $res = $this->_enabledAtPowerOn;
+        return $res;
     }
 
     /**
      * Configure the servo signal generator state at power up. Remember to call the matching module saveToFlash()
      * method, otherwise this call will have no effect.
      *
-     * @param newval : either Y_ENABLEDATPOWERON_FALSE or Y_ENABLEDATPOWERON_TRUE
+     * @param integer $newval : either YServo::ENABLEDATPOWERON_FALSE or YServo::ENABLEDATPOWERON_TRUE
      *
-     * @return YAPI_SUCCESS if the call succeeds.
+     * @return integer : YAPI::SUCCESS if the call succeeds.
      *
      * On failure, throws an exception or returns a negative error code.
      */
@@ -367,7 +385,7 @@ class YServo extends YFunction
     }
 
     /**
-     * Retrieves a servo for a given identifier.
+     * Retrieves a RC servo motor for a given identifier.
      * The identifier can be specified using several formats:
      * <ul>
      * <li>FunctionLogicalName</li>
@@ -377,17 +395,22 @@ class YServo extends YFunction
      * <li>ModuleLogicalName.FunctionLogicalName</li>
      * </ul>
      *
-     * This function does not require that the servo is online at the time
+     * This function does not require that the RC servo motor is online at the time
      * it is invoked. The returned object is nevertheless valid.
-     * Use the method YServo.isOnline() to test if the servo is
+     * Use the method isOnline() to test if the RC servo motor is
      * indeed online at a given time. In case of ambiguity when looking for
-     * a servo by logical name, no error is notified: the first instance
+     * a RC servo motor by logical name, no error is notified: the first instance
      * found is returned. The search is performed first by hardware name,
      * then by logical name.
      *
-     * @param func : a string that uniquely characterizes the servo
+     * If a call to this object's is_online() method returns FALSE although
+     * you are certain that the matching device is plugged, make sure that you did
+     * call registerHub() at application initialization time.
      *
-     * @return a YServo object allowing you to drive the servo.
+     * @param string $func : a string that uniquely characterizes the RC servo motor, for instance
+     *         SERVORC1.servo1.
+     *
+     * @return YServo : a YServo object allowing you to drive the RC servo motor.
      */
     public static function FindServo($func)
     {
@@ -440,27 +463,30 @@ class YServo extends YFunction
     { return $this->set_enabledAtPowerOn($newval); }
 
     /**
-     * Continues the enumeration of servos started using yFirstServo().
+     * Continues the enumeration of RC servo motors started using yFirstServo().
+     * Caution: You can't make any assumption about the returned RC servo motors order.
+     * If you want to find a specific a RC servo motor, use Servo.findServo()
+     * and a hardwareID or a logical name.
      *
-     * @return a pointer to a YServo object, corresponding to
-     *         a servo currently online, or a null pointer
-     *         if there are no more servos to enumerate.
+     * @return YServo : a pointer to a YServo object, corresponding to
+     *         a RC servo motor currently online, or a null pointer
+     *         if there are no more RC servo motors to enumerate.
      */
     public function nextServo()
     {   $resolve = YAPI::resolveFunction($this->_className, $this->_func);
         if($resolve->errorType != YAPI_SUCCESS) return null;
         $next_hwid = YAPI::getNextHardwareId($this->_className, $resolve->result);
         if($next_hwid == null) return null;
-        return yFindServo($next_hwid);
+        return self::FindServo($next_hwid);
     }
 
     /**
-     * Starts the enumeration of servos currently accessible.
-     * Use the method YServo.nextServo() to iterate on
-     * next servos.
+     * Starts the enumeration of RC servo motors currently accessible.
+     * Use the method YServo::nextServo() to iterate on
+     * next RC servo motors.
      *
-     * @return a pointer to a YServo object, corresponding to
-     *         the first servo currently online, or a null pointer
+     * @return YServo : a pointer to a YServo object, corresponding to
+     *         the first RC servo motor currently online, or a null pointer
      *         if there are none.
      */
     public static function FirstServo()
@@ -473,10 +499,10 @@ class YServo extends YFunction
 
 };
 
-//--- (Servo functions)
+//--- (YServo functions)
 
 /**
- * Retrieves a servo for a given identifier.
+ * Retrieves a RC servo motor for a given identifier.
  * The identifier can be specified using several formats:
  * <ul>
  * <li>FunctionLogicalName</li>
@@ -486,17 +512,22 @@ class YServo extends YFunction
  * <li>ModuleLogicalName.FunctionLogicalName</li>
  * </ul>
  *
- * This function does not require that the servo is online at the time
+ * This function does not require that the RC servo motor is online at the time
  * it is invoked. The returned object is nevertheless valid.
- * Use the method YServo.isOnline() to test if the servo is
+ * Use the method isOnline() to test if the RC servo motor is
  * indeed online at a given time. In case of ambiguity when looking for
- * a servo by logical name, no error is notified: the first instance
+ * a RC servo motor by logical name, no error is notified: the first instance
  * found is returned. The search is performed first by hardware name,
  * then by logical name.
  *
- * @param func : a string that uniquely characterizes the servo
+ * If a call to this object's is_online() method returns FALSE although
+ * you are certain that the matching device is plugged, make sure that you did
+ * call registerHub() at application initialization time.
  *
- * @return a YServo object allowing you to drive the servo.
+ * @param string $func : a string that uniquely characterizes the RC servo motor, for instance
+ *         SERVORC1.servo1.
+ *
+ * @return YServo : a YServo object allowing you to drive the RC servo motor.
  */
 function yFindServo($func)
 {
@@ -504,12 +535,12 @@ function yFindServo($func)
 }
 
 /**
- * Starts the enumeration of servos currently accessible.
- * Use the method YServo.nextServo() to iterate on
- * next servos.
+ * Starts the enumeration of RC servo motors currently accessible.
+ * Use the method YServo::nextServo() to iterate on
+ * next RC servo motors.
  *
- * @return a pointer to a YServo object, corresponding to
- *         the first servo currently online, or a null pointer
+ * @return YServo : a pointer to a YServo object, corresponding to
+ *         the first RC servo motor currently online, or a null pointer
  *         if there are none.
  */
 function yFirstServo()
@@ -517,5 +548,5 @@ function yFirstServo()
     return YServo::FirstServo();
 }
 
-//--- (end of Servo functions)
+//--- (end of YServo functions)
 ?>

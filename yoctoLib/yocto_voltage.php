@@ -1,11 +1,11 @@
 <?php
 /*********************************************************************
  *
- * $Id: yocto_voltage.php 23243 2016-02-23 14:13:12Z seb $
+ *  $Id: yocto_voltage.php 43580 2021-01-26 17:46:01Z mvuilleu $
  *
- * Implements YVoltage, the high-level API for Voltage functions
+ *  Implements YVoltage, the high-level API for Voltage functions
  *
- * - - - - - - - - - License information: - - - - - - - - - 
+ *  - - - - - - - - - License information: - - - - - - - - -
  *
  *  Copyright (C) 2011 and beyond by Yoctopuce Sarl, Switzerland.
  *
@@ -24,7 +24,7 @@
  *  obligations.
  *
  *  THE SOFTWARE AND DOCUMENTATION ARE PROVIDED 'AS IS' WITHOUT
- *  WARRANTY OF ANY KIND, EITHER EXPRESS OR IMPLIED, INCLUDING 
+ *  WARRANTY OF ANY KIND, EITHER EXPRESS OR IMPLIED, INCLUDING
  *  WITHOUT LIMITATION, ANY WARRANTY OF MERCHANTABILITY, FITNESS
  *  FOR A PARTICULAR PURPOSE, TITLE AND NON-INFRINGEMENT. IN NO
  *  EVENT SHALL LICENSOR BE LIABLE FOR ANY INCIDENTAL, SPECIAL,
@@ -41,21 +41,31 @@
 //--- (YVoltage return codes)
 //--- (end of YVoltage return codes)
 //--- (YVoltage definitions)
+if(!defined('Y_ENABLED_FALSE'))              define('Y_ENABLED_FALSE',             0);
+if(!defined('Y_ENABLED_TRUE'))               define('Y_ENABLED_TRUE',              1);
+if(!defined('Y_ENABLED_INVALID'))            define('Y_ENABLED_INVALID',           -1);
 //--- (end of YVoltage definitions)
+    #--- (YVoltage yapiwrapper)
+   #--- (end of YVoltage yapiwrapper)
 
 //--- (YVoltage declaration)
 /**
- * YVoltage Class: Voltage function interface
+ * YVoltage Class: voltage sensor control interface, available for instance in the Yocto-Motor-DC, the
+ * Yocto-Volt or the Yocto-Watt
  *
- * The Yoctopuce class YVoltage allows you to read and configure Yoctopuce voltage
- * sensors. It inherits from YSensor class the core functions to read measurements,
- * register callback functions, access to the autonomous datalogger.
+ * The YVoltage class allows you to read and configure Yoctopuce voltage sensors.
+ * It inherits from YSensor class the core functions to read measurements,
+ * to register callback functions, and to access the autonomous datalogger.
  */
 class YVoltage extends YSensor
 {
+    const ENABLED_FALSE                  = 0;
+    const ENABLED_TRUE                   = 1;
+    const ENABLED_INVALID                = -1;
     //--- (end of YVoltage declaration)
 
     //--- (YVoltage attributes)
+    protected $_enabled                  = Y_ENABLED_INVALID;            // Bool
     //--- (end of YVoltage attributes)
 
     function __construct($str_func)
@@ -68,6 +78,57 @@ class YVoltage extends YSensor
     }
 
     //--- (YVoltage implementation)
+
+    function _parseAttr($name, $val)
+    {
+        switch($name) {
+        case 'enabled':
+            $this->_enabled = intval($val);
+            return 1;
+        }
+        return parent::_parseAttr($name, $val);
+    }
+
+    /**
+     * Returns the activation state of this input.
+     *
+     * @return integer : either YVoltage::ENABLED_FALSE or YVoltage::ENABLED_TRUE, according to the
+     * activation state of this input
+     *
+     * On failure, throws an exception or returns YVoltage::ENABLED_INVALID.
+     */
+    public function get_enabled()
+    {
+        // $res                    is a enumBOOL;
+        if ($this->_cacheExpiration <= YAPI::GetTickCount()) {
+            if ($this->load(YAPI::$_yapiContext->GetCacheValidity()) != YAPI_SUCCESS) {
+                return Y_ENABLED_INVALID;
+            }
+        }
+        $res = $this->_enabled;
+        return $res;
+    }
+
+    /**
+     * Changes the activation state of this voltage input. When AC measurements are disabled,
+     * the device will always assume a DC signal, and vice-versa. When both AC and DC measurements
+     * are active, the device switches between AC and DC mode based on the relative amplitude
+     * of variations compared to the average value.
+     * Remember to call the saveToFlash()
+     * method of the module if the modification must be kept.
+     *
+     * @param integer $newval : either YVoltage::ENABLED_FALSE or YVoltage::ENABLED_TRUE, according to the
+     * activation state of this voltage input
+     *
+     * @return integer : YAPI::SUCCESS if the call succeeds.
+     *
+     * On failure, throws an exception or returns a negative error code.
+     */
+    public function set_enabled($newval)
+    {
+        $rest_val = strval($newval);
+        return $this->_setAttr("enabled",$rest_val);
+    }
 
     /**
      * Retrieves a voltage sensor for a given identifier.
@@ -82,15 +143,20 @@ class YVoltage extends YSensor
      *
      * This function does not require that the voltage sensor is online at the time
      * it is invoked. The returned object is nevertheless valid.
-     * Use the method YVoltage.isOnline() to test if the voltage sensor is
+     * Use the method isOnline() to test if the voltage sensor is
      * indeed online at a given time. In case of ambiguity when looking for
      * a voltage sensor by logical name, no error is notified: the first instance
      * found is returned. The search is performed first by hardware name,
      * then by logical name.
      *
-     * @param func : a string that uniquely characterizes the voltage sensor
+     * If a call to this object's is_online() method returns FALSE although
+     * you are certain that the matching device is plugged, make sure that you did
+     * call registerHub() at application initialization time.
      *
-     * @return a YVoltage object allowing you to drive the voltage sensor.
+     * @param string $func : a string that uniquely characterizes the voltage sensor, for instance
+     *         MOTORCTL.voltage.
+     *
+     * @return YVoltage : a YVoltage object allowing you to drive the voltage sensor.
      */
     public static function FindVoltage($func)
     {
@@ -103,10 +169,19 @@ class YVoltage extends YSensor
         return $obj;
     }
 
+    public function enabled()
+    { return $this->get_enabled(); }
+
+    public function setEnabled($newval)
+    { return $this->set_enabled($newval); }
+
     /**
      * Continues the enumeration of voltage sensors started using yFirstVoltage().
+     * Caution: You can't make any assumption about the returned voltage sensors order.
+     * If you want to find a specific a voltage sensor, use Voltage.findVoltage()
+     * and a hardwareID or a logical name.
      *
-     * @return a pointer to a YVoltage object, corresponding to
+     * @return YVoltage : a pointer to a YVoltage object, corresponding to
      *         a voltage sensor currently online, or a null pointer
      *         if there are no more voltage sensors to enumerate.
      */
@@ -115,15 +190,15 @@ class YVoltage extends YSensor
         if($resolve->errorType != YAPI_SUCCESS) return null;
         $next_hwid = YAPI::getNextHardwareId($this->_className, $resolve->result);
         if($next_hwid == null) return null;
-        return yFindVoltage($next_hwid);
+        return self::FindVoltage($next_hwid);
     }
 
     /**
      * Starts the enumeration of voltage sensors currently accessible.
-     * Use the method YVoltage.nextVoltage() to iterate on
+     * Use the method YVoltage::nextVoltage() to iterate on
      * next voltage sensors.
      *
-     * @return a pointer to a YVoltage object, corresponding to
+     * @return YVoltage : a pointer to a YVoltage object, corresponding to
      *         the first voltage sensor currently online, or a null pointer
      *         if there are none.
      */
@@ -137,7 +212,7 @@ class YVoltage extends YSensor
 
 };
 
-//--- (Voltage functions)
+//--- (YVoltage functions)
 
 /**
  * Retrieves a voltage sensor for a given identifier.
@@ -152,15 +227,20 @@ class YVoltage extends YSensor
  *
  * This function does not require that the voltage sensor is online at the time
  * it is invoked. The returned object is nevertheless valid.
- * Use the method YVoltage.isOnline() to test if the voltage sensor is
+ * Use the method isOnline() to test if the voltage sensor is
  * indeed online at a given time. In case of ambiguity when looking for
  * a voltage sensor by logical name, no error is notified: the first instance
  * found is returned. The search is performed first by hardware name,
  * then by logical name.
  *
- * @param func : a string that uniquely characterizes the voltage sensor
+ * If a call to this object's is_online() method returns FALSE although
+ * you are certain that the matching device is plugged, make sure that you did
+ * call registerHub() at application initialization time.
  *
- * @return a YVoltage object allowing you to drive the voltage sensor.
+ * @param string $func : a string that uniquely characterizes the voltage sensor, for instance
+ *         MOTORCTL.voltage.
+ *
+ * @return YVoltage : a YVoltage object allowing you to drive the voltage sensor.
  */
 function yFindVoltage($func)
 {
@@ -169,10 +249,10 @@ function yFindVoltage($func)
 
 /**
  * Starts the enumeration of voltage sensors currently accessible.
- * Use the method YVoltage.nextVoltage() to iterate on
+ * Use the method YVoltage::nextVoltage() to iterate on
  * next voltage sensors.
  *
- * @return a pointer to a YVoltage object, corresponding to
+ * @return YVoltage : a pointer to a YVoltage object, corresponding to
  *         the first voltage sensor currently online, or a null pointer
  *         if there are none.
  */
@@ -181,5 +261,5 @@ function yFirstVoltage()
     return YVoltage::FirstVoltage();
 }
 
-//--- (end of Voltage functions)
+//--- (end of YVoltage functions)
 ?>

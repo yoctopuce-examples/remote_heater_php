@@ -1,11 +1,11 @@
 <?php
 /*********************************************************************
  *
- * $Id: yocto_temperature.php 23527 2016-03-18 21:49:19Z mvuilleu $
+ *  $Id: yocto_temperature.php 43580 2021-01-26 17:46:01Z mvuilleu $
  *
- * Implements YTemperature, the high-level API for Temperature functions
+ *  Implements YTemperature, the high-level API for Temperature functions
  *
- * - - - - - - - - - License information: - - - - - - - - - 
+ *  - - - - - - - - - License information: - - - - - - - - -
  *
  *  Copyright (C) 2011 and beyond by Yoctopuce Sarl, Switzerland.
  *
@@ -24,7 +24,7 @@
  *  obligations.
  *
  *  THE SOFTWARE AND DOCUMENTATION ARE PROVIDED 'AS IS' WITHOUT
- *  WARRANTY OF ANY KIND, EITHER EXPRESS OR IMPLIED, INCLUDING 
+ *  WARRANTY OF ANY KIND, EITHER EXPRESS OR IMPLIED, INCLUDING
  *  WITHOUT LIMITATION, ANY WARRANTY OF MERCHANTABILITY, FITNESS
  *  FOR A PARTICULAR PURPOSE, TITLE AND NON-INFRINGEMENT. IN NO
  *  EVENT SHALL LICENSOR BE LIABLE FOR ANY INCIDENTAL, SPECIAL,
@@ -55,21 +55,28 @@ if(!defined('Y_SENSORTYPE_PT100_2WIRES'))    define('Y_SENSORTYPE_PT100_2WIRES',
 if(!defined('Y_SENSORTYPE_RES_OHM'))         define('Y_SENSORTYPE_RES_OHM',        11);
 if(!defined('Y_SENSORTYPE_RES_NTC'))         define('Y_SENSORTYPE_RES_NTC',        12);
 if(!defined('Y_SENSORTYPE_RES_LINEAR'))      define('Y_SENSORTYPE_RES_LINEAR',     13);
+if(!defined('Y_SENSORTYPE_RES_INTERNAL'))    define('Y_SENSORTYPE_RES_INTERNAL',   14);
+if(!defined('Y_SENSORTYPE_IR'))              define('Y_SENSORTYPE_IR',             15);
+if(!defined('Y_SENSORTYPE_RES_PT1000'))      define('Y_SENSORTYPE_RES_PT1000',     16);
+if(!defined('Y_SENSORTYPE_CHANNEL_OFF'))     define('Y_SENSORTYPE_CHANNEL_OFF',    17);
 if(!defined('Y_SENSORTYPE_INVALID'))         define('Y_SENSORTYPE_INVALID',        -1);
 if(!defined('Y_SIGNALVALUE_INVALID'))        define('Y_SIGNALVALUE_INVALID',       YAPI_INVALID_DOUBLE);
 if(!defined('Y_SIGNALUNIT_INVALID'))         define('Y_SIGNALUNIT_INVALID',        YAPI_INVALID_STRING);
 if(!defined('Y_COMMAND_INVALID'))            define('Y_COMMAND_INVALID',           YAPI_INVALID_STRING);
 //--- (end of YTemperature definitions)
+    #--- (YTemperature yapiwrapper)
+   #--- (end of YTemperature yapiwrapper)
 
 //--- (YTemperature declaration)
 /**
- * YTemperature Class: Temperature function interface
+ * YTemperature Class: temperature sensor control interface, available for instance in the
+ * Yocto-Meteo-V2, the Yocto-PT100, the Yocto-Temperature or the Yocto-Thermocouple
  *
- * The Yoctopuce class YTemperature allows you to read and configure Yoctopuce temperature
- * sensors. It inherits from YSensor class the core functions to read measurements,
- * register callback functions, access to the autonomous datalogger.
- * This class adds the ability to configure some specific parameters for some
- * sensors (connection type, temperature mapping table).
+ * The YTemperature class allows you to read and configure Yoctopuce temperature sensors.
+ * It inherits from YSensor class the core functions to read measurements,
+ * to register callback functions, and to access the autonomous datalogger.
+ * This class adds the ability to configure some specific parameters
+ * for some sensors (connection type, temperature mapping table).
  */
 class YTemperature extends YSensor
 {
@@ -87,6 +94,10 @@ class YTemperature extends YSensor
     const SENSORTYPE_RES_OHM             = 11;
     const SENSORTYPE_RES_NTC             = 12;
     const SENSORTYPE_RES_LINEAR          = 13;
+    const SENSORTYPE_RES_INTERNAL        = 14;
+    const SENSORTYPE_IR                  = 15;
+    const SENSORTYPE_RES_PT1000          = 16;
+    const SENSORTYPE_CHANNEL_OFF         = 17;
     const SENSORTYPE_INVALID             = -1;
     const SIGNALVALUE_INVALID            = YAPI_INVALID_DOUBLE;
     const SIGNALUNIT_INVALID             = YAPI_INVALID_STRING;
@@ -141,9 +152,9 @@ class YTemperature extends YSensor
      * WARNING: if a specific calibration is defined for the temperature function, a
      * unit system change will probably break it.
      *
-     * @param newval : a string corresponding to the measuring unit for the measured temperature
+     * @param string $newval : a string corresponding to the measuring unit for the measured temperature
      *
-     * @return YAPI_SUCCESS if the call succeeds.
+     * @return integer : YAPI::SUCCESS if the call succeeds.
      *
      * On failure, throws an exception or returns a negative error code.
      */
@@ -156,37 +167,48 @@ class YTemperature extends YSensor
     /**
      * Returns the temperature sensor type.
      *
-     * @return a value among Y_SENSORTYPE_DIGITAL, Y_SENSORTYPE_TYPE_K, Y_SENSORTYPE_TYPE_E,
-     * Y_SENSORTYPE_TYPE_J, Y_SENSORTYPE_TYPE_N, Y_SENSORTYPE_TYPE_R, Y_SENSORTYPE_TYPE_S,
-     * Y_SENSORTYPE_TYPE_T, Y_SENSORTYPE_PT100_4WIRES, Y_SENSORTYPE_PT100_3WIRES,
-     * Y_SENSORTYPE_PT100_2WIRES, Y_SENSORTYPE_RES_OHM, Y_SENSORTYPE_RES_NTC and Y_SENSORTYPE_RES_LINEAR
-     * corresponding to the temperature sensor type
+     * @return integer : a value among YTemperature::SENSORTYPE_DIGITAL, YTemperature::SENSORTYPE_TYPE_K,
+     * YTemperature::SENSORTYPE_TYPE_E, YTemperature::SENSORTYPE_TYPE_J, YTemperature::SENSORTYPE_TYPE_N,
+     * YTemperature::SENSORTYPE_TYPE_R, YTemperature::SENSORTYPE_TYPE_S, YTemperature::SENSORTYPE_TYPE_T,
+     * YTemperature::SENSORTYPE_PT100_4WIRES, YTemperature::SENSORTYPE_PT100_3WIRES,
+     * YTemperature::SENSORTYPE_PT100_2WIRES, YTemperature::SENSORTYPE_RES_OHM,
+     * YTemperature::SENSORTYPE_RES_NTC, YTemperature::SENSORTYPE_RES_LINEAR,
+     * YTemperature::SENSORTYPE_RES_INTERNAL, YTemperature::SENSORTYPE_IR,
+     * YTemperature::SENSORTYPE_RES_PT1000 and YTemperature::SENSORTYPE_CHANNEL_OFF corresponding to the
+     * temperature sensor type
      *
-     * On failure, throws an exception or returns Y_SENSORTYPE_INVALID.
+     * On failure, throws an exception or returns YTemperature::SENSORTYPE_INVALID.
      */
     public function get_sensorType()
     {
+        // $res                    is a enumTEMPSENSORTYPEALL;
         if ($this->_cacheExpiration <= YAPI::GetTickCount()) {
-            if ($this->load(YAPI::$defaultCacheValidity) != YAPI_SUCCESS) {
+            if ($this->load(YAPI::$_yapiContext->GetCacheValidity()) != YAPI_SUCCESS) {
                 return Y_SENSORTYPE_INVALID;
             }
         }
-        return $this->_sensorType;
+        $res = $this->_sensorType;
+        return $res;
     }
 
     /**
-     * Modifies the temperature sensor type.  This function is used
+     * Changes the temperature sensor type.  This function is used
      * to define the type of thermocouple (K,E...) used with the device.
      * It has no effect if module is using a digital sensor or a thermistor.
      * Remember to call the saveToFlash() method of the module if the
      * modification must be kept.
      *
-     * @param newval : a value among Y_SENSORTYPE_DIGITAL, Y_SENSORTYPE_TYPE_K, Y_SENSORTYPE_TYPE_E,
-     * Y_SENSORTYPE_TYPE_J, Y_SENSORTYPE_TYPE_N, Y_SENSORTYPE_TYPE_R, Y_SENSORTYPE_TYPE_S,
-     * Y_SENSORTYPE_TYPE_T, Y_SENSORTYPE_PT100_4WIRES, Y_SENSORTYPE_PT100_3WIRES,
-     * Y_SENSORTYPE_PT100_2WIRES, Y_SENSORTYPE_RES_OHM, Y_SENSORTYPE_RES_NTC and Y_SENSORTYPE_RES_LINEAR
+     * @param integer $newval : a value among YTemperature::SENSORTYPE_DIGITAL,
+     * YTemperature::SENSORTYPE_TYPE_K, YTemperature::SENSORTYPE_TYPE_E, YTemperature::SENSORTYPE_TYPE_J,
+     * YTemperature::SENSORTYPE_TYPE_N, YTemperature::SENSORTYPE_TYPE_R, YTemperature::SENSORTYPE_TYPE_S,
+     * YTemperature::SENSORTYPE_TYPE_T, YTemperature::SENSORTYPE_PT100_4WIRES,
+     * YTemperature::SENSORTYPE_PT100_3WIRES, YTemperature::SENSORTYPE_PT100_2WIRES,
+     * YTemperature::SENSORTYPE_RES_OHM, YTemperature::SENSORTYPE_RES_NTC,
+     * YTemperature::SENSORTYPE_RES_LINEAR, YTemperature::SENSORTYPE_RES_INTERNAL,
+     * YTemperature::SENSORTYPE_IR, YTemperature::SENSORTYPE_RES_PT1000 and
+     * YTemperature::SENSORTYPE_CHANNEL_OFF corresponding to the temperature sensor type
      *
-     * @return YAPI_SUCCESS if the call succeeds.
+     * @return integer : YAPI::SUCCESS if the call succeeds.
      *
      * On failure, throws an exception or returns a negative error code.
      */
@@ -199,46 +221,52 @@ class YTemperature extends YSensor
     /**
      * Returns the current value of the electrical signal measured by the sensor.
      *
-     * @return a floating point number corresponding to the current value of the electrical signal
-     * measured by the sensor
+     * @return double : a floating point number corresponding to the current value of the electrical
+     * signal measured by the sensor
      *
-     * On failure, throws an exception or returns Y_SIGNALVALUE_INVALID.
+     * On failure, throws an exception or returns YTemperature::SIGNALVALUE_INVALID.
      */
     public function get_signalValue()
     {
+        // $res                    is a double;
         if ($this->_cacheExpiration <= YAPI::GetTickCount()) {
-            if ($this->load(YAPI::$defaultCacheValidity) != YAPI_SUCCESS) {
+            if ($this->load(YAPI::$_yapiContext->GetCacheValidity()) != YAPI_SUCCESS) {
                 return Y_SIGNALVALUE_INVALID;
             }
         }
-        return round($this->_signalValue * 1000) / 1000;
+        $res = round($this->_signalValue * 1000) / 1000;
+        return $res;
     }
 
     /**
      * Returns the measuring unit of the electrical signal used by the sensor.
      *
-     * @return a string corresponding to the measuring unit of the electrical signal used by the sensor
+     * @return string : a string corresponding to the measuring unit of the electrical signal used by the sensor
      *
-     * On failure, throws an exception or returns Y_SIGNALUNIT_INVALID.
+     * On failure, throws an exception or returns YTemperature::SIGNALUNIT_INVALID.
      */
     public function get_signalUnit()
     {
+        // $res                    is a string;
         if ($this->_cacheExpiration == 0) {
-            if ($this->load(YAPI::$defaultCacheValidity) != YAPI_SUCCESS) {
+            if ($this->load(YAPI::$_yapiContext->GetCacheValidity()) != YAPI_SUCCESS) {
                 return Y_SIGNALUNIT_INVALID;
             }
         }
-        return $this->_signalUnit;
+        $res = $this->_signalUnit;
+        return $res;
     }
 
     public function get_command()
     {
+        // $res                    is a string;
         if ($this->_cacheExpiration <= YAPI::GetTickCount()) {
-            if ($this->load(YAPI::$defaultCacheValidity) != YAPI_SUCCESS) {
+            if ($this->load(YAPI::$_yapiContext->GetCacheValidity()) != YAPI_SUCCESS) {
                 return Y_COMMAND_INVALID;
             }
         }
-        return $this->_command;
+        $res = $this->_command;
+        return $res;
     }
 
     public function set_command($newval)
@@ -260,15 +288,20 @@ class YTemperature extends YSensor
      *
      * This function does not require that the temperature sensor is online at the time
      * it is invoked. The returned object is nevertheless valid.
-     * Use the method YTemperature.isOnline() to test if the temperature sensor is
+     * Use the method isOnline() to test if the temperature sensor is
      * indeed online at a given time. In case of ambiguity when looking for
      * a temperature sensor by logical name, no error is notified: the first instance
      * found is returned. The search is performed first by hardware name,
      * then by logical name.
      *
-     * @param func : a string that uniquely characterizes the temperature sensor
+     * If a call to this object's is_online() method returns FALSE although
+     * you are certain that the matching device is plugged, make sure that you did
+     * call registerHub() at application initialization time.
      *
-     * @return a YTemperature object allowing you to drive the temperature sensor.
+     * @param string $func : a string that uniquely characterizes the temperature sensor, for instance
+     *         METEOMK2.temperature.
+     *
+     * @return YTemperature : a YTemperature object allowing you to drive the temperature sensor.
      */
     public static function FindTemperature($func)
     {
@@ -282,15 +315,15 @@ class YTemperature extends YSensor
     }
 
     /**
-     * Configure NTC thermistor parameters in order to properly compute the temperature from
+     * Configures NTC thermistor parameters in order to properly compute the temperature from
      * the measured resistance. For increased precision, you can enter a complete mapping
      * table using set_thermistorResponseTable. This function can only be used with a
      * temperature sensor based on thermistors.
      *
-     * @param res25 : thermistor resistance at 25 degrees Celsius
-     * @param beta : Beta value
+     * @param double $res25 : thermistor resistance at 25 degrees Celsius
+     * @param double $beta : Beta value
      *
-     * @return YAPI_SUCCESS if the call succeeds.
+     * @return integer : YAPI::SUCCESS if the call succeeds.
      *
      * On failure, throws an exception or returns a negative error code.
      */
@@ -301,8 +334,8 @@ class YTemperature extends YSensor
         // $res100                 is a float;
         $tempValues = Array();  // floatArr;
         $resValues = Array();   // floatArr;
-        $t0 = 25.0+275.15;
-        $t1 = 100.0+275.15;
+        $t0 = 25.0+273.15;
+        $t1 = 100.0+273.15;
         $res100 = $res25 * exp($beta*(1.0/$t1 - 1.0/$t0));
         while(sizeof($tempValues) > 0) { array_pop($tempValues); };
         while(sizeof($resValues) > 0) { array_pop($resValues); };
@@ -318,14 +351,14 @@ class YTemperature extends YSensor
      * the measured resistance. This function can only be used with a temperature
      * sensor based on thermistors.
      *
-     * @param tempValues : array of floating point numbers, corresponding to all
-     *         temperatures (in degrees Celcius) for which the resistance of the
+     * @param double[] $tempValues : array of floating point numbers, corresponding to all
+     *         temperatures (in degrees Celsius) for which the resistance of the
      *         thermistor is specified.
-     * @param resValues : array of floating point numbers, corresponding to the resistance
+     * @param double[] $resValues : array of floating point numbers, corresponding to the resistance
      *         values (in Ohms) for each of the temperature included in the first
      *         argument, index by index.
      *
-     * @return YAPI_SUCCESS if the call succeeds.
+     * @return integer : YAPI::SUCCESS if the call succeeds.
      *
      * On failure, throws an exception or returns a negative error code.
      */
@@ -342,7 +375,7 @@ class YTemperature extends YSensor
         $siz = sizeof($tempValues);
         if (!($siz >= 2)) return $this->_throw( YAPI_INVALID_ARGUMENT, 'thermistor response table must have at least two points',YAPI_INVALID_ARGUMENT);
         if (!($siz == sizeof($resValues))) return $this->_throw( YAPI_INVALID_ARGUMENT, 'table sizes mismatch',YAPI_INVALID_ARGUMENT);
-        // may throw an exception
+
         $res = $this->set_command('Z');
         if (!($res==YAPI_SUCCESS)) return $this->_throw( YAPI_IO_ERROR, 'unable to reset thermistor parameters',YAPI_IO_ERROR);
         // add records in growing resistance value
@@ -376,14 +409,14 @@ class YTemperature extends YSensor
      * set_thermistorResponseTable function. This function can only be used with a
      * temperature sensor based on thermistors.
      *
-     * @param tempValues : array of floating point numbers, that is filled by the function
-     *         with all temperatures (in degrees Celcius) for which the resistance
+     * @param double[] $tempValues : array of floating point numbers, that is filled by the function
+     *         with all temperatures (in degrees Celsius) for which the resistance
      *         of the thermistor is specified.
-     * @param resValues : array of floating point numbers, that is filled by the function
+     * @param double[] $resValues : array of floating point numbers, that is filled by the function
      *         with the value (in Ohms) for each of the temperature included in the
      *         first argument, index by index.
      *
-     * @return YAPI_SUCCESS if the call succeeds.
+     * @return integer : YAPI::SUCCESS if the call succeeds.
      *
      * On failure, throws an exception or returns a negative error code.
      */
@@ -402,9 +435,12 @@ class YTemperature extends YSensor
         // $currRes                is a float;
         while(sizeof($tempValues) > 0) { array_pop($tempValues); };
         while(sizeof($resValues) > 0) { array_pop($resValues); };
-        // may throw an exception
+
         $id = $this->get_functionId();
         $id = substr($id,  11, strlen($id) - 11);
+        if ($id == '') {
+            $id = '1';
+        }
         $bin_json = $this->_download(sprintf('extra.json?page=%s', $id));
         $paramlist = $this->_json_get_array($bin_json);
         // first convert all temperatures to float
@@ -467,8 +503,11 @@ class YTemperature extends YSensor
 
     /**
      * Continues the enumeration of temperature sensors started using yFirstTemperature().
+     * Caution: You can't make any assumption about the returned temperature sensors order.
+     * If you want to find a specific a temperature sensor, use Temperature.findTemperature()
+     * and a hardwareID or a logical name.
      *
-     * @return a pointer to a YTemperature object, corresponding to
+     * @return YTemperature : a pointer to a YTemperature object, corresponding to
      *         a temperature sensor currently online, or a null pointer
      *         if there are no more temperature sensors to enumerate.
      */
@@ -477,15 +516,15 @@ class YTemperature extends YSensor
         if($resolve->errorType != YAPI_SUCCESS) return null;
         $next_hwid = YAPI::getNextHardwareId($this->_className, $resolve->result);
         if($next_hwid == null) return null;
-        return yFindTemperature($next_hwid);
+        return self::FindTemperature($next_hwid);
     }
 
     /**
      * Starts the enumeration of temperature sensors currently accessible.
-     * Use the method YTemperature.nextTemperature() to iterate on
+     * Use the method YTemperature::nextTemperature() to iterate on
      * next temperature sensors.
      *
-     * @return a pointer to a YTemperature object, corresponding to
+     * @return YTemperature : a pointer to a YTemperature object, corresponding to
      *         the first temperature sensor currently online, or a null pointer
      *         if there are none.
      */
@@ -499,7 +538,7 @@ class YTemperature extends YSensor
 
 };
 
-//--- (Temperature functions)
+//--- (YTemperature functions)
 
 /**
  * Retrieves a temperature sensor for a given identifier.
@@ -514,15 +553,20 @@ class YTemperature extends YSensor
  *
  * This function does not require that the temperature sensor is online at the time
  * it is invoked. The returned object is nevertheless valid.
- * Use the method YTemperature.isOnline() to test if the temperature sensor is
+ * Use the method isOnline() to test if the temperature sensor is
  * indeed online at a given time. In case of ambiguity when looking for
  * a temperature sensor by logical name, no error is notified: the first instance
  * found is returned. The search is performed first by hardware name,
  * then by logical name.
  *
- * @param func : a string that uniquely characterizes the temperature sensor
+ * If a call to this object's is_online() method returns FALSE although
+ * you are certain that the matching device is plugged, make sure that you did
+ * call registerHub() at application initialization time.
  *
- * @return a YTemperature object allowing you to drive the temperature sensor.
+ * @param string $func : a string that uniquely characterizes the temperature sensor, for instance
+ *         METEOMK2.temperature.
+ *
+ * @return YTemperature : a YTemperature object allowing you to drive the temperature sensor.
  */
 function yFindTemperature($func)
 {
@@ -531,10 +575,10 @@ function yFindTemperature($func)
 
 /**
  * Starts the enumeration of temperature sensors currently accessible.
- * Use the method YTemperature.nextTemperature() to iterate on
+ * Use the method YTemperature::nextTemperature() to iterate on
  * next temperature sensors.
  *
- * @return a pointer to a YTemperature object, corresponding to
+ * @return YTemperature : a pointer to a YTemperature object, corresponding to
  *         the first temperature sensor currently online, or a null pointer
  *         if there are none.
  */
@@ -543,5 +587,5 @@ function yFirstTemperature()
     return YTemperature::FirstTemperature();
 }
 
-//--- (end of Temperature functions)
+//--- (end of YTemperature functions)
 ?>

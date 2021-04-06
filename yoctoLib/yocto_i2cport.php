@@ -1,9 +1,9 @@
 <?php
 /*********************************************************************
  *
- *  $Id: yocto_spiport.php 43580 2021-01-26 17:46:01Z mvuilleu $
+ *  $Id: yocto_i2cport.php 43580 2021-01-26 17:46:01Z mvuilleu $
  *
- *  Implements YSpiPort, the high-level API for SpiPort functions
+ *  Implements YI2cPort, the high-level API for I2cPort functions
  *
  *  - - - - - - - - - License information: - - - - - - - - -
  *
@@ -38,24 +38,13 @@
  *
  *********************************************************************/
 
-//--- (generated code: YSpiPort return codes)
-//--- (end of generated code: YSpiPort return codes)
-//--- (generated code: YSpiPort definitions)
-if(!defined('Y_VOLTAGELEVEL_OFF'))           define('Y_VOLTAGELEVEL_OFF',          0);
-if(!defined('Y_VOLTAGELEVEL_TTL3V'))         define('Y_VOLTAGELEVEL_TTL3V',        1);
-if(!defined('Y_VOLTAGELEVEL_TTL3VR'))        define('Y_VOLTAGELEVEL_TTL3VR',       2);
-if(!defined('Y_VOLTAGELEVEL_TTL5V'))         define('Y_VOLTAGELEVEL_TTL5V',        3);
-if(!defined('Y_VOLTAGELEVEL_TTL5VR'))        define('Y_VOLTAGELEVEL_TTL5VR',       4);
-if(!defined('Y_VOLTAGELEVEL_RS232'))         define('Y_VOLTAGELEVEL_RS232',        5);
-if(!defined('Y_VOLTAGELEVEL_RS485'))         define('Y_VOLTAGELEVEL_RS485',        6);
-if(!defined('Y_VOLTAGELEVEL_TTL1V8'))        define('Y_VOLTAGELEVEL_TTL1V8',       7);
-if(!defined('Y_VOLTAGELEVEL_INVALID'))       define('Y_VOLTAGELEVEL_INVALID',      -1);
-if(!defined('Y_SSPOLARITY_ACTIVE_LOW'))      define('Y_SSPOLARITY_ACTIVE_LOW',     0);
-if(!defined('Y_SSPOLARITY_ACTIVE_HIGH'))     define('Y_SSPOLARITY_ACTIVE_HIGH',    1);
-if(!defined('Y_SSPOLARITY_INVALID'))         define('Y_SSPOLARITY_INVALID',        -1);
-if(!defined('Y_SHIFTSAMPLING_OFF'))          define('Y_SHIFTSAMPLING_OFF',         0);
-if(!defined('Y_SHIFTSAMPLING_ON'))           define('Y_SHIFTSAMPLING_ON',          1);
-if(!defined('Y_SHIFTSAMPLING_INVALID'))      define('Y_SHIFTSAMPLING_INVALID',     -1);
+//--- (generated code: YI2cPort return codes)
+//--- (end of generated code: YI2cPort return codes)
+//--- (generated code: YI2cPort definitions)
+if(!defined('Y_I2CVOLTAGELEVEL_OFF'))        define('Y_I2CVOLTAGELEVEL_OFF',       0);
+if(!defined('Y_I2CVOLTAGELEVEL_3V3'))        define('Y_I2CVOLTAGELEVEL_3V3',       1);
+if(!defined('Y_I2CVOLTAGELEVEL_1V8'))        define('Y_I2CVOLTAGELEVEL_1V8',       2);
+if(!defined('Y_I2CVOLTAGELEVEL_INVALID'))    define('Y_I2CVOLTAGELEVEL_INVALID',   -1);
 if(!defined('Y_RXCOUNT_INVALID'))            define('Y_RXCOUNT_INVALID',           YAPI_INVALID_UINT);
 if(!defined('Y_TXCOUNT_INVALID'))            define('Y_TXCOUNT_INVALID',           YAPI_INVALID_UINT);
 if(!defined('Y_ERRCOUNT_INVALID'))           define('Y_ERRCOUNT_INVALID',          YAPI_INVALID_UINT);
@@ -68,31 +57,32 @@ if(!defined('Y_JOBMAXTASK_INVALID'))         define('Y_JOBMAXTASK_INVALID',     
 if(!defined('Y_JOBMAXSIZE_INVALID'))         define('Y_JOBMAXSIZE_INVALID',        YAPI_INVALID_UINT);
 if(!defined('Y_COMMAND_INVALID'))            define('Y_COMMAND_INVALID',           YAPI_INVALID_STRING);
 if(!defined('Y_PROTOCOL_INVALID'))           define('Y_PROTOCOL_INVALID',          YAPI_INVALID_STRING);
-if(!defined('Y_SPIMODE_INVALID'))            define('Y_SPIMODE_INVALID',           YAPI_INVALID_STRING);
-//--- (end of generated code: YSpiPort definitions)
-//--- (generated code: YSpiSnoopingRecord definitions)
-//--- (end of generated code: YSpiSnoopingRecord definitions)
+if(!defined('Y_I2CMODE_INVALID'))            define('Y_I2CMODE_INVALID',           YAPI_INVALID_STRING);
+//--- (end of generated code: YI2cPort definitions)
 
-//--- (generated code: YSpiSnoopingRecord declaration)
+//--- (generated code: YI2cSnoopingRecord definitions)
+//--- (end of generated code: YI2cSnoopingRecord definitions)
+
+//--- (generated code: YI2cSnoopingRecord declaration)
 /**
- * YSpiSnoopingRecord Class: Intercepted SPI message description, returned by spiPort.snoopMessages method
+ * YI2cSnoopingRecord Class: Intercepted I2C message description, returned by i2cPort.snoopMessages method
  *
  *
  */
-class YSpiSnoopingRecord
+class YI2cSnoopingRecord
 {
-    //--- (end of generated code: YSpiSnoopingRecord declaration)
+    //--- (end of generated code: YI2cSnoopingRecord declaration)
 
-    //--- (generated code: YSpiSnoopingRecord attributes)
+    //--- (generated code: YI2cSnoopingRecord attributes)
     protected $_tim                      = 0;                            // int
     protected $_dir                      = 0;                            // int
     protected $_msg                      = "";                           // str
-    //--- (end of generated code: YSpiSnoopingRecord attributes)
+    //--- (end of generated code: YI2cSnoopingRecord attributes)
 
     function __construct($str_json)
     {
-        //--- (generated code: YSpiSnoopingRecord constructor)
-        //--- (end of generated code: YSpiSnoopingRecord constructor)
+        //--- (generated code: YI2cSnoopingRecord constructor)
+        //--- (end of generated code: YI2cSnoopingRecord constructor)
 
         $loadval = json_decode($str_json, TRUE);
         $this->_tim = $loadval['t'];
@@ -100,7 +90,7 @@ class YSpiSnoopingRecord
         $this->_msg = substr($loadval['m'], 1);
     }
 
-    //--- (generated code: YSpiSnoopingRecord implementation)
+    //--- (generated code: YI2cSnoopingRecord implementation)
 
     /**
      * Returns the elapsed time, in ms, since the beginning of the preceding message.
@@ -132,21 +122,22 @@ class YSpiSnoopingRecord
         return $this->_msg;
     }
 
-    //--- (end of generated code: YSpiSnoopingRecord implementation)
+    //--- (end of generated code: YI2cSnoopingRecord implementation)
 }
 
 
-//--- (generated code: YSpiPort declaration)
+
+//--- (generated code: YI2cPort declaration)
 /**
- * YSpiPort Class: SPI port control interface, available for instance in the Yocto-SPI
+ * YI2cPort Class: I2C port control interface, available for instance in the Yocto-I2C
  *
- * The YSpiPort class allows you to fully drive a Yoctopuce SPI port.
+ * The YI2cPort classe allows you to fully drive a Yoctopuce I2C port.
  * It can be used to send and receive data, and to configure communication
- * parameters (baud rate, bit count, parity, flow control and protocol).
- * Note that Yoctopuce SPI ports are not exposed as virtual COM ports.
+ * parameters (baud rate, etc).
+ * Note that Yoctopuce I2C ports are not exposed as virtual COM ports.
  * They are meant to be used in the same way as all Yoctopuce devices.
  */
-class YSpiPort extends YFunction
+class YI2cPort extends YFunction
 {
     const RXCOUNT_INVALID                = YAPI_INVALID_UINT;
     const TXCOUNT_INVALID                = YAPI_INVALID_UINT;
@@ -160,25 +151,14 @@ class YSpiPort extends YFunction
     const JOBMAXSIZE_INVALID             = YAPI_INVALID_UINT;
     const COMMAND_INVALID                = YAPI_INVALID_STRING;
     const PROTOCOL_INVALID               = YAPI_INVALID_STRING;
-    const VOLTAGELEVEL_OFF               = 0;
-    const VOLTAGELEVEL_TTL3V             = 1;
-    const VOLTAGELEVEL_TTL3VR            = 2;
-    const VOLTAGELEVEL_TTL5V             = 3;
-    const VOLTAGELEVEL_TTL5VR            = 4;
-    const VOLTAGELEVEL_RS232             = 5;
-    const VOLTAGELEVEL_RS485             = 6;
-    const VOLTAGELEVEL_TTL1V8            = 7;
-    const VOLTAGELEVEL_INVALID           = -1;
-    const SPIMODE_INVALID                = YAPI_INVALID_STRING;
-    const SSPOLARITY_ACTIVE_LOW          = 0;
-    const SSPOLARITY_ACTIVE_HIGH         = 1;
-    const SSPOLARITY_INVALID             = -1;
-    const SHIFTSAMPLING_OFF              = 0;
-    const SHIFTSAMPLING_ON               = 1;
-    const SHIFTSAMPLING_INVALID          = -1;
-    //--- (end of generated code: YSpiPort declaration)
+    const I2CVOLTAGELEVEL_OFF            = 0;
+    const I2CVOLTAGELEVEL_3V3            = 1;
+    const I2CVOLTAGELEVEL_1V8            = 2;
+    const I2CVOLTAGELEVEL_INVALID        = -1;
+    const I2CMODE_INVALID                = YAPI_INVALID_STRING;
+    //--- (end of generated code: YI2cPort declaration)
 
-    //--- (generated code: YSpiPort attributes)
+    //--- (generated code: YI2cPort attributes)
     protected $_rxCount                  = Y_RXCOUNT_INVALID;            // UInt31
     protected $_txCount                  = Y_TXCOUNT_INVALID;            // UInt31
     protected $_errCount                 = Y_ERRCOUNT_INVALID;           // UInt31
@@ -191,25 +171,23 @@ class YSpiPort extends YFunction
     protected $_jobMaxSize               = Y_JOBMAXSIZE_INVALID;         // UInt31
     protected $_command                  = Y_COMMAND_INVALID;            // Text
     protected $_protocol                 = Y_PROTOCOL_INVALID;           // Protocol
-    protected $_voltageLevel             = Y_VOLTAGELEVEL_INVALID;       // SerialVoltageLevel
-    protected $_spiMode                  = Y_SPIMODE_INVALID;            // SpiMode
-    protected $_ssPolarity               = Y_SSPOLARITY_INVALID;         // Polarity
-    protected $_shiftSampling            = Y_SHIFTSAMPLING_INVALID;      // OnOff
+    protected $_i2cVoltageLevel          = Y_I2CVOLTAGELEVEL_INVALID;    // I2cVoltageLevel
+    protected $_i2cMode                  = Y_I2CMODE_INVALID;            // I2cMode
     protected $_rxptr                    = 0;                            // int
     protected $_rxbuff                   = "";                           // bin
     protected $_rxbuffptr                = 0;                            // int
-    //--- (end of generated code: YSpiPort attributes)
+    //--- (end of generated code: YI2cPort attributes)
 
     function __construct($str_func)
     {
-        //--- (generated code: YSpiPort constructor)
+        //--- (generated code: YI2cPort constructor)
         parent::__construct($str_func);
-        $this->_className = 'SpiPort';
+        $this->_className = 'I2cPort';
 
-        //--- (end of generated code: YSpiPort constructor)
+        //--- (end of generated code: YI2cPort constructor)
     }
 
-    //--- (generated code: YSpiPort implementation)
+    //--- (generated code: YI2cPort implementation)
 
     function _parseAttr($name, $val)
     {
@@ -250,17 +228,11 @@ class YSpiPort extends YFunction
         case 'protocol':
             $this->_protocol = $val;
             return 1;
-        case 'voltageLevel':
-            $this->_voltageLevel = intval($val);
+        case 'i2cVoltageLevel':
+            $this->_i2cVoltageLevel = intval($val);
             return 1;
-        case 'spiMode':
-            $this->_spiMode = $val;
-            return 1;
-        case 'ssPolarity':
-            $this->_ssPolarity = intval($val);
-            return 1;
-        case 'shiftSampling':
-            $this->_shiftSampling = intval($val);
+        case 'i2cMode':
+            $this->_i2cMode = $val;
             return 1;
         }
         return parent::_parseAttr($name, $val);
@@ -271,7 +243,7 @@ class YSpiPort extends YFunction
      *
      * @return integer : an integer corresponding to the total number of bytes received since last reset
      *
-     * On failure, throws an exception or returns YSpiPort::RXCOUNT_INVALID.
+     * On failure, throws an exception or returns YI2cPort::RXCOUNT_INVALID.
      */
     public function get_rxCount()
     {
@@ -290,7 +262,7 @@ class YSpiPort extends YFunction
      *
      * @return integer : an integer corresponding to the total number of bytes transmitted since last reset
      *
-     * On failure, throws an exception or returns YSpiPort::TXCOUNT_INVALID.
+     * On failure, throws an exception or returns YI2cPort::TXCOUNT_INVALID.
      */
     public function get_txCount()
     {
@@ -309,7 +281,7 @@ class YSpiPort extends YFunction
      *
      * @return integer : an integer corresponding to the total number of communication errors detected since last reset
      *
-     * On failure, throws an exception or returns YSpiPort::ERRCOUNT_INVALID.
+     * On failure, throws an exception or returns YI2cPort::ERRCOUNT_INVALID.
      */
     public function get_errCount()
     {
@@ -328,7 +300,7 @@ class YSpiPort extends YFunction
      *
      * @return integer : an integer corresponding to the total number of messages received since last reset
      *
-     * On failure, throws an exception or returns YSpiPort::RXMSGCOUNT_INVALID.
+     * On failure, throws an exception or returns YI2cPort::RXMSGCOUNT_INVALID.
      */
     public function get_rxMsgCount()
     {
@@ -347,7 +319,7 @@ class YSpiPort extends YFunction
      *
      * @return integer : an integer corresponding to the total number of messages send since last reset
      *
-     * On failure, throws an exception or returns YSpiPort::TXMSGCOUNT_INVALID.
+     * On failure, throws an exception or returns YI2cPort::TXMSGCOUNT_INVALID.
      */
     public function get_txMsgCount()
     {
@@ -366,7 +338,7 @@ class YSpiPort extends YFunction
      *
      * @return string : a string corresponding to the latest message fully received (for Line and Frame protocols)
      *
-     * On failure, throws an exception or returns YSpiPort::LASTMSG_INVALID.
+     * On failure, throws an exception or returns YI2cPort::LASTMSG_INVALID.
      */
     public function get_lastMsg()
     {
@@ -385,7 +357,7 @@ class YSpiPort extends YFunction
      *
      * @return string : a string corresponding to the name of the job file currently in use
      *
-     * On failure, throws an exception or returns YSpiPort::CURRENTJOB_INVALID.
+     * On failure, throws an exception or returns YI2cPort::CURRENTJOB_INVALID.
      */
     public function get_currentJob()
     {
@@ -420,7 +392,7 @@ class YSpiPort extends YFunction
      *
      * @return string : a string corresponding to the job file to use when the device is powered on
      *
-     * On failure, throws an exception or returns YSpiPort::STARTUPJOB_INVALID.
+     * On failure, throws an exception or returns YI2cPort::STARTUPJOB_INVALID.
      */
     public function get_startupJob()
     {
@@ -456,7 +428,7 @@ class YSpiPort extends YFunction
      *
      * @return integer : an integer corresponding to the maximum number of tasks in a job that the device can handle
      *
-     * On failure, throws an exception or returns YSpiPort::JOBMAXTASK_INVALID.
+     * On failure, throws an exception or returns YI2cPort::JOBMAXTASK_INVALID.
      */
     public function get_jobMaxTask()
     {
@@ -475,7 +447,7 @@ class YSpiPort extends YFunction
      *
      * @return integer : an integer corresponding to maximum size allowed for job files
      *
-     * On failure, throws an exception or returns YSpiPort::JOBMAXSIZE_INVALID.
+     * On failure, throws an exception or returns YI2cPort::JOBMAXSIZE_INVALID.
      */
     public function get_jobMaxSize()
     {
@@ -508,15 +480,14 @@ class YSpiPort extends YFunction
     }
 
     /**
-     * Returns the type of protocol used over the serial line, as a string.
-     * Possible values are "Line" for ASCII messages separated by CR and/or LF,
-     * "Frame:[timeout]ms" for binary messages separated by a delay time,
-     * "Char" for a continuous ASCII stream or
-     * "Byte" for a continuous binary stream.
+     * Returns the type of protocol used to send I2C messages, as a string.
+     * Possible values are
+     * "Line" for messages separated by LF or
+     * "Char" for continuous stream of codes.
      *
-     * @return string : a string corresponding to the type of protocol used over the serial line, as a string
+     * @return string : a string corresponding to the type of protocol used to send I2C messages, as a string
      *
-     * On failure, throws an exception or returns YSpiPort::PROTOCOL_INVALID.
+     * On failure, throws an exception or returns YI2cPort::PROTOCOL_INVALID.
      */
     public function get_protocol()
     {
@@ -531,17 +502,16 @@ class YSpiPort extends YFunction
     }
 
     /**
-     * Changes the type of protocol used over the serial line.
-     * Possible values are "Line" for ASCII messages separated by CR and/or LF,
-     * "Frame:[timeout]ms" for binary messages separated by a delay time,
-     * "Char" for a continuous ASCII stream or
-     * "Byte" for a continuous binary stream.
+     * Changes the type of protocol used to send I2C messages.
+     * Possible values are
+     * "Line" for messages separated by LF or
+     * "Char" for continuous stream of codes.
      * The suffix "/[wait]ms" can be added to reduce the transmit rate so that there
-     * is always at lest the specified number of milliseconds between each bytes sent.
+     * is always at lest the specified number of milliseconds between each message sent.
      * Remember to call the saveToFlash() method of the module if the
      * modification must be kept.
      *
-     * @param string $newval : a string corresponding to the type of protocol used over the serial line
+     * @param string $newval : a string corresponding to the type of protocol used to send I2C messages
      *
      * @return integer : YAPI::SUCCESS if the call succeeds.
      *
@@ -554,173 +524,91 @@ class YSpiPort extends YFunction
     }
 
     /**
-     * Returns the voltage level used on the serial line.
+     * Returns the voltage level used on the I2C bus.
      *
-     * @return integer : a value among YSpiPort::VOLTAGELEVEL_OFF, YSpiPort::VOLTAGELEVEL_TTL3V,
-     * YSpiPort::VOLTAGELEVEL_TTL3VR, YSpiPort::VOLTAGELEVEL_TTL5V, YSpiPort::VOLTAGELEVEL_TTL5VR,
-     * YSpiPort::VOLTAGELEVEL_RS232, YSpiPort::VOLTAGELEVEL_RS485 and YSpiPort::VOLTAGELEVEL_TTL1V8
-     * corresponding to the voltage level used on the serial line
+     * @return integer : a value among YI2cPort::I2CVOLTAGELEVEL_OFF, YI2cPort::I2CVOLTAGELEVEL_3V3 and
+     * YI2cPort::I2CVOLTAGELEVEL_1V8 corresponding to the voltage level used on the I2C bus
      *
-     * On failure, throws an exception or returns YSpiPort::VOLTAGELEVEL_INVALID.
+     * On failure, throws an exception or returns YI2cPort::I2CVOLTAGELEVEL_INVALID.
      */
-    public function get_voltageLevel()
+    public function get_i2cVoltageLevel()
     {
-        // $res                    is a enumSERIALVOLTAGELEVEL;
+        // $res                    is a enumI2CVOLTAGELEVEL;
         if ($this->_cacheExpiration <= YAPI::GetTickCount()) {
             if ($this->load(YAPI::$_yapiContext->GetCacheValidity()) != YAPI_SUCCESS) {
-                return Y_VOLTAGELEVEL_INVALID;
+                return Y_I2CVOLTAGELEVEL_INVALID;
             }
         }
-        $res = $this->_voltageLevel;
+        $res = $this->_i2cVoltageLevel;
         return $res;
     }
 
     /**
-     * Changes the voltage type used on the serial line. Valid
-     * values  will depend on the Yoctopuce device model featuring
-     * the serial port feature.  Check your device documentation
-     * to find out which values are valid for that specific model.
-     * Trying to set an invalid value will have no effect.
+     * Changes the voltage level used on the I2C bus.
      * Remember to call the saveToFlash() method of the module if the
      * modification must be kept.
      *
-     * @param integer $newval : a value among YSpiPort::VOLTAGELEVEL_OFF, YSpiPort::VOLTAGELEVEL_TTL3V,
-     * YSpiPort::VOLTAGELEVEL_TTL3VR, YSpiPort::VOLTAGELEVEL_TTL5V, YSpiPort::VOLTAGELEVEL_TTL5VR,
-     * YSpiPort::VOLTAGELEVEL_RS232, YSpiPort::VOLTAGELEVEL_RS485 and YSpiPort::VOLTAGELEVEL_TTL1V8
-     * corresponding to the voltage type used on the serial line
+     * @param integer $newval : a value among YI2cPort::I2CVOLTAGELEVEL_OFF, YI2cPort::I2CVOLTAGELEVEL_3V3
+     * and YI2cPort::I2CVOLTAGELEVEL_1V8 corresponding to the voltage level used on the I2C bus
      *
      * @return integer : YAPI::SUCCESS if the call succeeds.
      *
      * On failure, throws an exception or returns a negative error code.
      */
-    public function set_voltageLevel($newval)
+    public function set_i2cVoltageLevel($newval)
     {
         $rest_val = strval($newval);
-        return $this->_setAttr("voltageLevel",$rest_val);
+        return $this->_setAttr("i2cVoltageLevel",$rest_val);
     }
 
     /**
-     * Returns the SPI port communication parameters, as a string such as
-     * "125000,0,msb". The string includes the baud rate, the SPI mode (between
-     * 0 and 3) and the bit order.
+     * Returns the I2C port communication parameters, as a string such as
+     * "400kbps,2000ms,NoRestart". The string includes the baud rate, the
+     * recovery delay after communications errors, and if needed the option
+     * NoRestart to use a Stop/Start sequence instead of the
+     * Restart state when performing read on the I2C bus.
      *
-     * @return string : a string corresponding to the SPI port communication parameters, as a string such as
-     *         "125000,0,msb"
+     * @return string : a string corresponding to the I2C port communication parameters, as a string such as
+     *         "400kbps,2000ms,NoRestart"
      *
-     * On failure, throws an exception or returns YSpiPort::SPIMODE_INVALID.
+     * On failure, throws an exception or returns YI2cPort::I2CMODE_INVALID.
      */
-    public function get_spiMode()
+    public function get_i2cMode()
     {
         // $res                    is a string;
         if ($this->_cacheExpiration <= YAPI::GetTickCount()) {
             if ($this->load(YAPI::$_yapiContext->GetCacheValidity()) != YAPI_SUCCESS) {
-                return Y_SPIMODE_INVALID;
+                return Y_I2CMODE_INVALID;
             }
         }
-        $res = $this->_spiMode;
+        $res = $this->_i2cMode;
         return $res;
     }
 
     /**
-     * Changes the SPI port communication parameters, with a string such as
-     * "125000,0,msb". The string includes the baud rate, the SPI mode (between
-     * 0 and 3) and the bit order.
+     * Changes the I2C port communication parameters, with a string such as
+     * "400kbps,2000ms". The string includes the baud rate, the
+     * recovery delay after communications errors, and if needed the option
+     * NoRestart to use a Stop/Start sequence instead of the
+     * Restart state when performing read on the I2C bus.
      * Remember to call the saveToFlash() method of the module if the
      * modification must be kept.
      *
-     * @param string $newval : a string corresponding to the SPI port communication parameters, with a string such as
-     *         "125000,0,msb"
+     * @param string $newval : a string corresponding to the I2C port communication parameters, with a string such as
+     *         "400kbps,2000ms"
      *
      * @return integer : YAPI::SUCCESS if the call succeeds.
      *
      * On failure, throws an exception or returns a negative error code.
      */
-    public function set_spiMode($newval)
+    public function set_i2cMode($newval)
     {
         $rest_val = $newval;
-        return $this->_setAttr("spiMode",$rest_val);
+        return $this->_setAttr("i2cMode",$rest_val);
     }
 
     /**
-     * Returns the SS line polarity.
-     *
-     * @return integer : either YSpiPort::SSPOLARITY_ACTIVE_LOW or YSpiPort::SSPOLARITY_ACTIVE_HIGH,
-     * according to the SS line polarity
-     *
-     * On failure, throws an exception or returns YSpiPort::SSPOLARITY_INVALID.
-     */
-    public function get_ssPolarity()
-    {
-        // $res                    is a enumPOLARITY;
-        if ($this->_cacheExpiration <= YAPI::GetTickCount()) {
-            if ($this->load(YAPI::$_yapiContext->GetCacheValidity()) != YAPI_SUCCESS) {
-                return Y_SSPOLARITY_INVALID;
-            }
-        }
-        $res = $this->_ssPolarity;
-        return $res;
-    }
-
-    /**
-     * Changes the SS line polarity.
-     * Remember to call the saveToFlash() method of the module if the
-     * modification must be kept.
-     *
-     * @param integer $newval : either YSpiPort::SSPOLARITY_ACTIVE_LOW or YSpiPort::SSPOLARITY_ACTIVE_HIGH,
-     * according to the SS line polarity
-     *
-     * @return integer : YAPI::SUCCESS if the call succeeds.
-     *
-     * On failure, throws an exception or returns a negative error code.
-     */
-    public function set_ssPolarity($newval)
-    {
-        $rest_val = strval($newval);
-        return $this->_setAttr("ssPolarity",$rest_val);
-    }
-
-    /**
-     * Returns true when the SDI line phase is shifted with regards to the SDO line.
-     *
-     * @return integer : either YSpiPort::SHIFTSAMPLING_OFF or YSpiPort::SHIFTSAMPLING_ON, according to true
-     * when the SDI line phase is shifted with regards to the SDO line
-     *
-     * On failure, throws an exception or returns YSpiPort::SHIFTSAMPLING_INVALID.
-     */
-    public function get_shiftSampling()
-    {
-        // $res                    is a enumONOFF;
-        if ($this->_cacheExpiration <= YAPI::GetTickCount()) {
-            if ($this->load(YAPI::$_yapiContext->GetCacheValidity()) != YAPI_SUCCESS) {
-                return Y_SHIFTSAMPLING_INVALID;
-            }
-        }
-        $res = $this->_shiftSampling;
-        return $res;
-    }
-
-    /**
-     * Changes the SDI line sampling shift. When disabled, SDI line is
-     * sampled in the middle of data output time. When enabled, SDI line is
-     * samples at the end of data output time.
-     * Remember to call the saveToFlash() method of the module if the
-     * modification must be kept.
-     *
-     * @param integer $newval : either YSpiPort::SHIFTSAMPLING_OFF or YSpiPort::SHIFTSAMPLING_ON, according
-     * to the SDI line sampling shift
-     *
-     * @return integer : YAPI::SUCCESS if the call succeeds.
-     *
-     * On failure, throws an exception or returns a negative error code.
-     */
-    public function set_shiftSampling($newval)
-    {
-        $rest_val = strval($newval);
-        return $this->_setAttr("shiftSampling",$rest_val);
-    }
-
-    /**
-     * Retrieves a SPI port for a given identifier.
+     * Retrieves an I2C port for a given identifier.
      * The identifier can be specified using several formats:
      * <ul>
      * <li>FunctionLogicalName</li>
@@ -730,11 +618,11 @@ class YSpiPort extends YFunction
      * <li>ModuleLogicalName.FunctionLogicalName</li>
      * </ul>
      *
-     * This function does not require that the SPI port is online at the time
+     * This function does not require that the I2C port is online at the time
      * it is invoked. The returned object is nevertheless valid.
-     * Use the method isOnline() to test if the SPI port is
+     * Use the method isOnline() to test if the I2C port is
      * indeed online at a given time. In case of ambiguity when looking for
-     * a SPI port by logical name, no error is notified: the first instance
+     * an I2C port by logical name, no error is notified: the first instance
      * found is returned. The search is performed first by hardware name,
      * then by logical name.
      *
@@ -742,18 +630,18 @@ class YSpiPort extends YFunction
      * you are certain that the matching device is plugged, make sure that you did
      * call registerHub() at application initialization time.
      *
-     * @param string $func : a string that uniquely characterizes the SPI port, for instance
-     *         YSPIMK01.spiPort.
+     * @param string $func : a string that uniquely characterizes the I2C port, for instance
+     *         YI2CMK01.i2cPort.
      *
-     * @return YSpiPort : a YSpiPort object allowing you to drive the SPI port.
+     * @return YI2cPort : a YI2cPort object allowing you to drive the I2C port.
      */
-    public static function FindSpiPort($func)
+    public static function FindI2cPort($func)
     {
-        // $obj                    is a YSpiPort;
-        $obj = YFunction::_FindFromCache('SpiPort', $func);
+        // $obj                    is a YI2cPort;
+        $obj = YFunction::_FindFromCache('I2cPort', $func);
         if ($obj == null) {
-            $obj = new YSpiPort($func);
-            YFunction::_AddToCache('SpiPort', $func, $obj);
+            $obj = new YI2cPort($func);
+            YFunction::_AddToCache('I2cPort', $func, $obj);
         }
         return $obj;
     }
@@ -1020,7 +908,262 @@ class YSpiPort extends YFunction
     }
 
     /**
-     * Sends a single byte to the serial port.
+     * Sends a one-way message (provided as a a binary buffer) to a device on the I2C bus.
+     * This function checks and reports communication errors on the I2C bus.
+     *
+     * @param integer $slaveAddr : the 7-bit address of the slave device (without the direction bit)
+     * @param string $buff : the binary buffer to be sent
+     *
+     * @return integer : YAPI::SUCCESS if the call succeeds.
+     *
+     * On failure, throws an exception or returns a negative error code.
+     */
+    public function i2cSendBin($slaveAddr,$buff)
+    {
+        // $nBytes                 is a int;
+        // $idx                    is a int;
+        // $val                    is a int;
+        // $msg                    is a str;
+        // $reply                  is a str;
+        $msg = sprintf('@%02x:', $slaveAddr);
+        $nBytes = strlen($buff);
+        $idx = 0;
+        while ($idx < $nBytes) {
+            $val = ord($buff[$idx]);
+            $msg = sprintf('%s%02x', $msg, $val);
+            $idx = $idx + 1;
+        }
+
+        $reply = $this->queryLine($msg,1000);
+        if (!(strlen($reply) > 0)) return $this->_throw( YAPI_IO_ERROR, 'No response from I2C device',YAPI_IO_ERROR);
+        $idx = Ystrpos($reply,'[N]!');
+        if (!($idx < 0)) return $this->_throw( YAPI_IO_ERROR, 'No I2C ACK received',YAPI_IO_ERROR);
+        $idx = Ystrpos($reply,'!');
+        if (!($idx < 0)) return $this->_throw( YAPI_IO_ERROR, 'I2C protocol error',YAPI_IO_ERROR);
+        return YAPI_SUCCESS;
+    }
+
+    /**
+     * Sends a one-way message (provided as a list of integer) to a device on the I2C bus.
+     * This function checks and reports communication errors on the I2C bus.
+     *
+     * @param integer $slaveAddr : the 7-bit address of the slave device (without the direction bit)
+     * @param Integer[] $values : a list of data bytes to be sent
+     *
+     * @return integer : YAPI::SUCCESS if the call succeeds.
+     *
+     * On failure, throws an exception or returns a negative error code.
+     */
+    public function i2cSendArray($slaveAddr,$values)
+    {
+        // $nBytes                 is a int;
+        // $idx                    is a int;
+        // $val                    is a int;
+        // $msg                    is a str;
+        // $reply                  is a str;
+        $msg = sprintf('@%02x:', $slaveAddr);
+        $nBytes = sizeof($values);
+        $idx = 0;
+        while ($idx < $nBytes) {
+            $val = $values[$idx];
+            $msg = sprintf('%s%02x', $msg, $val);
+            $idx = $idx + 1;
+        }
+
+        $reply = $this->queryLine($msg,1000);
+        if (!(strlen($reply) > 0)) return $this->_throw( YAPI_IO_ERROR, 'No response from I2C device',YAPI_IO_ERROR);
+        $idx = Ystrpos($reply,'[N]!');
+        if (!($idx < 0)) return $this->_throw( YAPI_IO_ERROR, 'No I2C ACK received',YAPI_IO_ERROR);
+        $idx = Ystrpos($reply,'!');
+        if (!($idx < 0)) return $this->_throw( YAPI_IO_ERROR, 'I2C protocol error',YAPI_IO_ERROR);
+        return YAPI_SUCCESS;
+    }
+
+    /**
+     * Sends a one-way message (provided as a a binary buffer) to a device on the I2C bus,
+     * then read back the specified number of bytes from device.
+     * This function checks and reports communication errors on the I2C bus.
+     *
+     * @param integer $slaveAddr : the 7-bit address of the slave device (without the direction bit)
+     * @param string $buff : the binary buffer to be sent
+     * @param integer $rcvCount : the number of bytes to receive once the data bytes are sent
+     *
+     * @return string : a list of bytes with the data received from slave device.
+     *
+     * On failure, throws an exception or returns an empty binary buffer.
+     */
+    public function i2cSendAndReceiveBin($slaveAddr,$buff,$rcvCount)
+    {
+        // $nBytes                 is a int;
+        // $idx                    is a int;
+        // $val                    is a int;
+        // $msg                    is a str;
+        // $reply                  is a str;
+        // $rcvbytes               is a bin;
+        $msg = sprintf('@%02x:', $slaveAddr);
+        $nBytes = strlen($buff);
+        $idx = 0;
+        while ($idx < $nBytes) {
+            $val = ord($buff[$idx]);
+            $msg = sprintf('%s%02x', $msg, $val);
+            $idx = $idx + 1;
+        }
+        $idx = 0;
+        while ($idx < $rcvCount) {
+            $msg = sprintf('%sxx', $msg);
+            $idx = $idx + 1;
+        }
+
+        $reply = $this->queryLine($msg,1000);
+        $rcvbytes = '';
+        if (!(strlen($reply) > 0)) return $this->_throw( YAPI_IO_ERROR, 'No response from I2C device',$rcvbytes);
+        $idx = Ystrpos($reply,'[N]!');
+        if (!($idx < 0)) return $this->_throw( YAPI_IO_ERROR, 'No I2C ACK received',$rcvbytes);
+        $idx = Ystrpos($reply,'!');
+        if (!($idx < 0)) return $this->_throw( YAPI_IO_ERROR, 'I2C protocol error',$rcvbytes);
+        $reply = substr($reply,  strlen($reply)-2*$rcvCount, 2*$rcvCount);
+        $rcvbytes = YAPI::_hexStrToBin($reply);
+        return $rcvbytes;
+    }
+
+    /**
+     * Sends a one-way message (provided as a list of integer) to a device on the I2C bus,
+     * then read back the specified number of bytes from device.
+     * This function checks and reports communication errors on the I2C bus.
+     *
+     * @param integer $slaveAddr : the 7-bit address of the slave device (without the direction bit)
+     * @param Integer[] $values : a list of data bytes to be sent
+     * @param integer $rcvCount : the number of bytes to receive once the data bytes are sent
+     *
+     * @return Integer[] : a list of bytes with the data received from slave device.
+     *
+     * On failure, throws an exception or returns an empty array.
+     */
+    public function i2cSendAndReceiveArray($slaveAddr,$values,$rcvCount)
+    {
+        // $nBytes                 is a int;
+        // $idx                    is a int;
+        // $val                    is a int;
+        // $msg                    is a str;
+        // $reply                  is a str;
+        // $rcvbytes               is a bin;
+        $res = Array();         // intArr;
+        $msg = sprintf('@%02x:', $slaveAddr);
+        $nBytes = sizeof($values);
+        $idx = 0;
+        while ($idx < $nBytes) {
+            $val = $values[$idx];
+            $msg = sprintf('%s%02x', $msg, $val);
+            $idx = $idx + 1;
+        }
+        $idx = 0;
+        while ($idx < $rcvCount) {
+            $msg = sprintf('%sxx', $msg);
+            $idx = $idx + 1;
+        }
+
+        $reply = $this->queryLine($msg,1000);
+        if (!(strlen($reply) > 0)) return $this->_throw( YAPI_IO_ERROR, 'No response from I2C device',$res);
+        $idx = Ystrpos($reply,'[N]!');
+        if (!($idx < 0)) return $this->_throw( YAPI_IO_ERROR, 'No I2C ACK received',$res);
+        $idx = Ystrpos($reply,'!');
+        if (!($idx < 0)) return $this->_throw( YAPI_IO_ERROR, 'I2C protocol error',$res);
+        $reply = substr($reply,  strlen($reply)-2*$rcvCount, 2*$rcvCount);
+        $rcvbytes = YAPI::_hexStrToBin($reply);
+        while(sizeof($res) > 0) { array_pop($res); };
+        $idx = 0;
+        while ($idx < $rcvCount) {
+            $val = ord($rcvbytes[$idx]);
+            $res[] = $val;
+            $idx = $idx + 1;
+        }
+        return $res;
+    }
+
+    /**
+     * Sends a text-encoded I2C code stream to the I2C bus, as is.
+     * An I2C code stream is a string made of hexadecimal data bytes,
+     * but that may also include the I2C state transitions code:
+     * "{S}" to emit a start condition,
+     * "{R}" for a repeated start condition,
+     * "{P}" for a stop condition,
+     * "xx" for receiving a data byte,
+     * "{A}" to ack a data byte received and
+     * "{N}" to nack a data byte received.
+     * If a newline ("\n") is included in the stream, the message
+     * will be terminated and a newline will also be added to the
+     * receive stream.
+     *
+     * @param string $codes : the code stream to send
+     *
+     * @return integer : YAPI::SUCCESS if the call succeeds.
+     *
+     * On failure, throws an exception or returns a negative error code.
+     */
+    public function writeStr($codes)
+    {
+        // $bufflen                is a int;
+        // $buff                   is a bin;
+        // $idx                    is a int;
+        // $ch                     is a int;
+        $buff = $codes;
+        $bufflen = strlen($buff);
+        if ($bufflen < 100) {
+            // if string is pure text, we can send it as a simple command (faster)
+            $ch = 0x20;
+            $idx = 0;
+            while (($idx < $bufflen) && ($ch != 0)) {
+                $ch = ord($buff[$idx]);
+                if (($ch >= 0x20) && ($ch < 0x7f)) {
+                    $idx = $idx + 1;
+                } else {
+                    $ch = 0;
+                }
+            }
+            if ($idx >= $bufflen) {
+                return $this->sendCommand(sprintf('+%s',$codes));
+            }
+        }
+        // send string using file upload
+        return $this->_upload('txdata', $buff);
+    }
+
+    /**
+     * Sends a text-encoded I2C code stream to the I2C bus, and terminate
+     * the message en relâchant le bus.
+     * An I2C code stream is a string made of hexadecimal data bytes,
+     * but that may also include the I2C state transitions code:
+     * "{S}" to emit a start condition,
+     * "{R}" for a repeated start condition,
+     * "{P}" for a stop condition,
+     * "xx" for receiving a data byte,
+     * "{A}" to ack a data byte received and
+     * "{N}" to nack a data byte received.
+     * At the end of the stream, a stop condition is added if missing
+     * and a newline is added to the receive buffer as well.
+     *
+     * @param string $codes : the code stream to send
+     *
+     * @return integer : YAPI::SUCCESS if the call succeeds.
+     *
+     * On failure, throws an exception or returns a negative error code.
+     */
+    public function writeLine($codes)
+    {
+        // $bufflen                is a int;
+        // $buff                   is a bin;
+        $bufflen = strlen($codes);
+        if ($bufflen < 100) {
+            return $this->sendCommand(sprintf('!%s',$codes));
+        }
+        // send string using file upload
+        $buff = sprintf('%s'."\n".'', $codes);
+        return $this->_upload('txdata', $buff);
+    }
+
+    /**
+     * Sends a single byte to the I2C bus. Depending on the I2C bus state, the byte
+     * will be interpreted as an address byte or a data byte.
      *
      * @param integer $code : the byte to send
      *
@@ -1030,91 +1173,13 @@ class YSpiPort extends YFunction
      */
     public function writeByte($code)
     {
-        return $this->sendCommand(sprintf('$%02X', $code));
+        return $this->sendCommand(sprintf('+%02X', $code));
     }
 
     /**
-     * Sends an ASCII string to the serial port, as is.
-     *
-     * @param string $text : the text string to send
-     *
-     * @return integer : YAPI::SUCCESS if the call succeeds.
-     *
-     * On failure, throws an exception or returns a negative error code.
-     */
-    public function writeStr($text)
-    {
-        // $buff                   is a bin;
-        // $bufflen                is a int;
-        // $idx                    is a int;
-        // $ch                     is a int;
-        $buff = $text;
-        $bufflen = strlen($buff);
-        if ($bufflen < 100) {
-            // if string is pure text, we can send it as a simple command (faster)
-            $ch = 0x20;
-            $idx = 0;
-            while (($idx < $bufflen) && ($ch != 0)) {
-                $ch = ord($buff[$idx]);
-                if (($ch >= 0x20) && ($ch < 0x7f)) {
-                    $idx = $idx + 1;
-                } else {
-                    $ch = 0;
-                }
-            }
-            if ($idx >= $bufflen) {
-                return $this->sendCommand(sprintf('+%s',$text));
-            }
-        }
-        // send string using file upload
-        return $this->_upload('txdata', $buff);
-    }
-
-    /**
-     * Sends a binary buffer to the serial port, as is.
-     *
-     * @param string $buff : the binary buffer to send
-     *
-     * @return integer : YAPI::SUCCESS if the call succeeds.
-     *
-     * On failure, throws an exception or returns a negative error code.
-     */
-    public function writeBin($buff)
-    {
-        return $this->_upload('txdata', $buff);
-    }
-
-    /**
-     * Sends a byte sequence (provided as a list of bytes) to the serial port.
-     *
-     * @param Integer[] $byteList : a list of byte codes
-     *
-     * @return integer : YAPI::SUCCESS if the call succeeds.
-     *
-     * On failure, throws an exception or returns a negative error code.
-     */
-    public function writeArray($byteList)
-    {
-        // $buff                   is a bin;
-        // $bufflen                is a int;
-        // $idx                    is a int;
-        // $hexb                   is a int;
-        // $res                    is a int;
-        $bufflen = sizeof($byteList);
-        $buff = ($bufflen > 0 ? pack('C',array_fill(0, $bufflen, 0)) : '');
-        $idx = 0;
-        while ($idx < $bufflen) {
-            $hexb = $byteList[$idx];
-            $buff[$idx] = pack('C', $hexb);
-            $idx = $idx + 1;
-        }
-
-        $res = $this->_upload('txdata', $buff);
-        return $res;
-    }
-
-    /**
-     * Sends a byte sequence (provided as a hexadecimal string) to the serial port.
+     * Sends a byte sequence (provided as a hexadecimal string) to the I2C bus.
+     * Depending on the I2C bus state, the first byte will be interpreted as an
+     * address byte or a data byte.
      *
      * @param string $hexString : a string of hexadecimal byte codes
      *
@@ -1124,319 +1189,77 @@ class YSpiPort extends YFunction
      */
     public function writeHex($hexString)
     {
-        // $buff                   is a bin;
         // $bufflen                is a int;
-        // $idx                    is a int;
-        // $hexb                   is a int;
-        // $res                    is a int;
+        // $buff                   is a bin;
         $bufflen = strlen($hexString);
         if ($bufflen < 100) {
-            return $this->sendCommand(sprintf('$%s',$hexString));
+            return $this->sendCommand(sprintf('+%s',$hexString));
         }
-        $bufflen = (($bufflen) >> (1));
-        $buff = ($bufflen > 0 ? pack('C',array_fill(0, $bufflen, 0)) : '');
-        $idx = 0;
-        while ($idx < $bufflen) {
-            $hexb = hexdec(substr($hexString,  2 * $idx, 2));
-            $buff[$idx] = pack('C', $hexb);
-            $idx = $idx + 1;
-        }
+        $buff = $hexString;
 
-        $res = $this->_upload('txdata', $buff);
-        return $res;
-    }
-
-    /**
-     * Sends an ASCII string to the serial port, followed by a line break (CR LF).
-     *
-     * @param string $text : the text string to send
-     *
-     * @return integer : YAPI::SUCCESS if the call succeeds.
-     *
-     * On failure, throws an exception or returns a negative error code.
-     */
-    public function writeLine($text)
-    {
-        // $buff                   is a bin;
-        // $bufflen                is a int;
-        // $idx                    is a int;
-        // $ch                     is a int;
-        $buff = sprintf('%s'."\r".''."\n".'', $text);
-        $bufflen = strlen($buff)-2;
-        if ($bufflen < 100) {
-            // if string is pure text, we can send it as a simple command (faster)
-            $ch = 0x20;
-            $idx = 0;
-            while (($idx < $bufflen) && ($ch != 0)) {
-                $ch = ord($buff[$idx]);
-                if (($ch >= 0x20) && ($ch < 0x7f)) {
-                    $idx = $idx + 1;
-                } else {
-                    $ch = 0;
-                }
-            }
-            if ($idx >= $bufflen) {
-                return $this->sendCommand(sprintf('!%s',$text));
-            }
-        }
-        // send string using file upload
         return $this->_upload('txdata', $buff);
     }
 
     /**
-     * Reads one byte from the receive buffer, starting at current stream position.
-     * If data at current stream position is not available anymore in the receive buffer,
-     * or if there is no data available yet, the function returns YAPI::NO_MORE_DATA.
+     * Sends a binary buffer to the I2C bus, as is.
+     * Depending on the I2C bus state, the first byte will be interpreted
+     * as an address byte or a data byte.
      *
-     * @return integer : the next byte
-     *
-     * On failure, throws an exception or returns a negative error code.
-     */
-    public function readByte()
-    {
-        // $currpos                is a int;
-        // $reqlen                 is a int;
-        // $buff                   is a bin;
-        // $bufflen                is a int;
-        // $mult                   is a int;
-        // $endpos                 is a int;
-        // $res                    is a int;
-        // first check if we have the requested character in the look-ahead buffer
-        $bufflen = strlen($this->_rxbuff);
-        if (($this->_rxptr >= $this->_rxbuffptr) && ($this->_rxptr < $this->_rxbuffptr+$bufflen)) {
-            $res = ord($this->_rxbuff[$this->_rxptr-$this->_rxbuffptr]);
-            $this->_rxptr = $this->_rxptr + 1;
-            return $res;
-        }
-        // try to preload more than one byte to speed-up byte-per-byte access
-        $currpos = $this->_rxptr;
-        $reqlen = 1024;
-        $buff = $this->readBin($reqlen);
-        $bufflen = strlen($buff);
-        if ($this->_rxptr == $currpos+$bufflen) {
-            $res = ord($buff[0]);
-            $this->_rxptr = $currpos+1;
-            $this->_rxbuffptr = $currpos;
-            $this->_rxbuff = $buff;
-            return $res;
-        }
-        // mixed bidirectional data, retry with a smaller block
-        $this->_rxptr = $currpos;
-        $reqlen = 16;
-        $buff = $this->readBin($reqlen);
-        $bufflen = strlen($buff);
-        if ($this->_rxptr == $currpos+$bufflen) {
-            $res = ord($buff[0]);
-            $this->_rxptr = $currpos+1;
-            $this->_rxbuffptr = $currpos;
-            $this->_rxbuff = $buff;
-            return $res;
-        }
-        // still mixed, need to process character by character
-        $this->_rxptr = $currpos;
-
-        $buff = $this->_download(sprintf('rxdata.bin?pos=%d&len=1', $this->_rxptr));
-        $bufflen = strlen($buff) - 1;
-        $endpos = 0;
-        $mult = 1;
-        while (($bufflen > 0) && (ord($buff[$bufflen]) != 64)) {
-            $endpos = $endpos + $mult * (ord($buff[$bufflen]) - 48);
-            $mult = $mult * 10;
-            $bufflen = $bufflen - 1;
-        }
-        $this->_rxptr = $endpos;
-        if ($bufflen == 0) {
-            return YAPI_NO_MORE_DATA;
-        }
-        $res = ord($buff[0]);
-        return $res;
-    }
-
-    /**
-     * Reads data from the receive buffer as a string, starting at current stream position.
-     * If data at current stream position is not available anymore in the receive buffer, the
-     * function performs a short read.
-     *
-     * @param integer $nChars : the maximum number of characters to read
-     *
-     * @return string : a string with receive buffer contents
-     *
-     * On failure, throws an exception or returns a negative error code.
-     */
-    public function readStr($nChars)
-    {
-        // $buff                   is a bin;
-        // $bufflen                is a int;
-        // $mult                   is a int;
-        // $endpos                 is a int;
-        // $res                    is a str;
-        if ($nChars > 65535) {
-            $nChars = 65535;
-        }
-
-        $buff = $this->_download(sprintf('rxdata.bin?pos=%d&len=%d', $this->_rxptr, $nChars));
-        $bufflen = strlen($buff) - 1;
-        $endpos = 0;
-        $mult = 1;
-        while (($bufflen > 0) && (ord($buff[$bufflen]) != 64)) {
-            $endpos = $endpos + $mult * (ord($buff[$bufflen]) - 48);
-            $mult = $mult * 10;
-            $bufflen = $bufflen - 1;
-        }
-        $this->_rxptr = $endpos;
-        $res = substr($buff,  0, $bufflen);
-        return $res;
-    }
-
-    /**
-     * Reads data from the receive buffer as a binary buffer, starting at current stream position.
-     * If data at current stream position is not available anymore in the receive buffer, the
-     * function performs a short read.
-     *
-     * @param integer $nChars : the maximum number of bytes to read
-     *
-     * @return string : a binary object with receive buffer contents
-     *
-     * On failure, throws an exception or returns a negative error code.
-     */
-    public function readBin($nChars)
-    {
-        // $buff                   is a bin;
-        // $bufflen                is a int;
-        // $mult                   is a int;
-        // $endpos                 is a int;
-        // $idx                    is a int;
-        // $res                    is a bin;
-        if ($nChars > 65535) {
-            $nChars = 65535;
-        }
-
-        $buff = $this->_download(sprintf('rxdata.bin?pos=%d&len=%d', $this->_rxptr, $nChars));
-        $bufflen = strlen($buff) - 1;
-        $endpos = 0;
-        $mult = 1;
-        while (($bufflen > 0) && (ord($buff[$bufflen]) != 64)) {
-            $endpos = $endpos + $mult * (ord($buff[$bufflen]) - 48);
-            $mult = $mult * 10;
-            $bufflen = $bufflen - 1;
-        }
-        $this->_rxptr = $endpos;
-        $res = ($bufflen > 0 ? pack('C',array_fill(0, $bufflen, 0)) : '');
-        $idx = 0;
-        while ($idx < $bufflen) {
-            $res[$idx] = pack('C', ord($buff[$idx]));
-            $idx = $idx + 1;
-        }
-        return $res;
-    }
-
-    /**
-     * Reads data from the receive buffer as a list of bytes, starting at current stream position.
-     * If data at current stream position is not available anymore in the receive buffer, the
-     * function performs a short read.
-     *
-     * @param integer $nChars : the maximum number of bytes to read
-     *
-     * @return Integer[] : a sequence of bytes with receive buffer contents
-     *
-     * On failure, throws an exception or returns an empty array.
-     */
-    public function readArray($nChars)
-    {
-        // $buff                   is a bin;
-        // $bufflen                is a int;
-        // $mult                   is a int;
-        // $endpos                 is a int;
-        // $idx                    is a int;
-        // $b                      is a int;
-        $res = Array();         // intArr;
-        if ($nChars > 65535) {
-            $nChars = 65535;
-        }
-
-        $buff = $this->_download(sprintf('rxdata.bin?pos=%d&len=%d', $this->_rxptr, $nChars));
-        $bufflen = strlen($buff) - 1;
-        $endpos = 0;
-        $mult = 1;
-        while (($bufflen > 0) && (ord($buff[$bufflen]) != 64)) {
-            $endpos = $endpos + $mult * (ord($buff[$bufflen]) - 48);
-            $mult = $mult * 10;
-            $bufflen = $bufflen - 1;
-        }
-        $this->_rxptr = $endpos;
-        while(sizeof($res) > 0) { array_pop($res); };
-        $idx = 0;
-        while ($idx < $bufflen) {
-            $b = ord($buff[$idx]);
-            $res[] = $b;
-            $idx = $idx + 1;
-        }
-        return $res;
-    }
-
-    /**
-     * Reads data from the receive buffer as a hexadecimal string, starting at current stream position.
-     * If data at current stream position is not available anymore in the receive buffer, the
-     * function performs a short read.
-     *
-     * @param integer $nBytes : the maximum number of bytes to read
-     *
-     * @return string : a string with receive buffer contents, encoded in hexadecimal
-     *
-     * On failure, throws an exception or returns a negative error code.
-     */
-    public function readHex($nBytes)
-    {
-        // $buff                   is a bin;
-        // $bufflen                is a int;
-        // $mult                   is a int;
-        // $endpos                 is a int;
-        // $ofs                    is a int;
-        // $res                    is a str;
-        if ($nBytes > 65535) {
-            $nBytes = 65535;
-        }
-
-        $buff = $this->_download(sprintf('rxdata.bin?pos=%d&len=%d', $this->_rxptr, $nBytes));
-        $bufflen = strlen($buff) - 1;
-        $endpos = 0;
-        $mult = 1;
-        while (($bufflen > 0) && (ord($buff[$bufflen]) != 64)) {
-            $endpos = $endpos + $mult * (ord($buff[$bufflen]) - 48);
-            $mult = $mult * 10;
-            $bufflen = $bufflen - 1;
-        }
-        $this->_rxptr = $endpos;
-        $res = '';
-        $ofs = 0;
-        while ($ofs + 3 < $bufflen) {
-            $res = sprintf('%s%02X%02X%02X%02X', $res, ord($buff[$ofs]), ord($buff[$ofs + 1]), ord($buff[$ofs + 2]), ord($buff[$ofs + 3]));
-            $ofs = $ofs + 4;
-        }
-        while ($ofs < $bufflen) {
-            $res = sprintf('%s%02X', $res, ord($buff[$ofs]));
-            $ofs = $ofs + 1;
-        }
-        return $res;
-    }
-
-    /**
-     * Manually sets the state of the SS line. This function has no effect when
-     * the SS line is handled automatically.
-     *
-     * @param integer $val : 1 to turn SS active, 0 to release SS.
+     * @param string $buff : the binary buffer to send
      *
      * @return integer : YAPI::SUCCESS if the call succeeds.
      *
      * On failure, throws an exception or returns a negative error code.
      */
-    public function set_SS($val)
+    public function writeBin($buff)
     {
-        return $this->sendCommand(sprintf('S%d',$val));
+        // $nBytes                 is a int;
+        // $idx                    is a int;
+        // $val                    is a int;
+        // $msg                    is a str;
+        $msg = '';
+        $nBytes = strlen($buff);
+        $idx = 0;
+        while ($idx < $nBytes) {
+            $val = ord($buff[$idx]);
+            $msg = sprintf('%s%02x', $msg, $val);
+            $idx = $idx + 1;
+        }
+
+        return $this->writeHex($msg);
     }
 
     /**
-     * Retrieves messages (both direction) in the SPI port buffer, starting at current position.
+     * Sends a byte sequence (provided as a list of bytes) to the I2C bus.
+     * Depending on the I2C bus state, the first byte will be interpreted as an
+     * address byte or a data byte.
+     *
+     * @param Integer[] $byteList : a list of byte codes
+     *
+     * @return integer : YAPI::SUCCESS if the call succeeds.
+     *
+     * On failure, throws an exception or returns a negative error code.
+     */
+    public function writeArray($byteList)
+    {
+        // $nBytes                 is a int;
+        // $idx                    is a int;
+        // $val                    is a int;
+        // $msg                    is a str;
+        $msg = '';
+        $nBytes = sizeof($byteList);
+        $idx = 0;
+        while ($idx < $nBytes) {
+            $val = $byteList[$idx];
+            $msg = sprintf('%s%02x', $msg, $val);
+            $idx = $idx + 1;
+        }
+
+        return $this->writeHex($msg);
+    }
+
+    /**
+     * Retrieves messages (both direction) in the I2C port buffer, starting at current position.
      *
      * If no message is found, the search waits for one up to the specified maximum timeout
      * (in milliseconds).
@@ -1444,7 +1267,7 @@ class YSpiPort extends YFunction
      * @param integer $maxWait : the maximum number of milliseconds to wait for a message if none is found
      *         in the receive buffer.
      *
-     * @return YSpiSnoopingRecord[] : an array of YSpiSnoopingRecord objects containing the messages found, if any.
+     * @return YI2cSnoopingRecord[] : an array of YI2cSnoopingRecord objects containing the messages found, if any.
      *
      * On failure, throws an exception or returns an empty array.
      */
@@ -1454,7 +1277,7 @@ class YSpiPort extends YFunction
         // $msgbin                 is a bin;
         $msgarr = Array();      // strArr;
         // $msglen                 is a int;
-        $res = Array();         // YSpiSnoopingRecordArr;
+        $res = Array();         // YI2cSnoopingRecordArr;
         // $idx                    is a int;
 
         $url = sprintf('rxmsg.json?pos=%d&maxw=%d&t=0', $this->_rxptr, $maxWait);
@@ -1469,7 +1292,7 @@ class YSpiPort extends YFunction
         $this->_rxptr = intVal($msgarr[$msglen]);
         $idx = 0;
         while ($idx < $msglen) {
-            $res[] = new YSpiSnoopingRecord($msgarr[$idx]);
+            $res[] = new YI2cSnoopingRecord($msgarr[$idx]);
             $idx = $idx + 1;
         }
         return $res;
@@ -1523,71 +1346,59 @@ class YSpiPort extends YFunction
     public function setProtocol($newval)
     { return $this->set_protocol($newval); }
 
-    public function voltageLevel()
-    { return $this->get_voltageLevel(); }
+    public function i2cVoltageLevel()
+    { return $this->get_i2cVoltageLevel(); }
 
-    public function setVoltageLevel($newval)
-    { return $this->set_voltageLevel($newval); }
+    public function setI2cVoltageLevel($newval)
+    { return $this->set_i2cVoltageLevel($newval); }
 
-    public function spiMode()
-    { return $this->get_spiMode(); }
+    public function i2cMode()
+    { return $this->get_i2cMode(); }
 
-    public function setSpiMode($newval)
-    { return $this->set_spiMode($newval); }
-
-    public function ssPolarity()
-    { return $this->get_ssPolarity(); }
-
-    public function setSsPolarity($newval)
-    { return $this->set_ssPolarity($newval); }
-
-    public function shiftSampling()
-    { return $this->get_shiftSampling(); }
-
-    public function setShiftSampling($newval)
-    { return $this->set_shiftSampling($newval); }
+    public function setI2cMode($newval)
+    { return $this->set_i2cMode($newval); }
 
     /**
-     * Continues the enumeration of SPI ports started using yFirstSpiPort().
-     * Caution: You can't make any assumption about the returned SPI ports order.
-     * If you want to find a specific a SPI port, use SpiPort.findSpiPort()
+     * Continues the enumeration of I2C ports started using yFirstI2cPort().
+     * Caution: You can't make any assumption about the returned I2C ports order.
+     * If you want to find a specific an I2C port, use I2cPort.findI2cPort()
      * and a hardwareID or a logical name.
      *
-     * @return YSpiPort : a pointer to a YSpiPort object, corresponding to
-     *         a SPI port currently online, or a null pointer
-     *         if there are no more SPI ports to enumerate.
+     * @return YI2cPort : a pointer to a YI2cPort object, corresponding to
+     *         an I2C port currently online, or a null pointer
+     *         if there are no more I2C ports to enumerate.
      */
-    public function nextSpiPort()
+    public function nextI2cPort()
     {   $resolve = YAPI::resolveFunction($this->_className, $this->_func);
         if($resolve->errorType != YAPI_SUCCESS) return null;
         $next_hwid = YAPI::getNextHardwareId($this->_className, $resolve->result);
         if($next_hwid == null) return null;
-        return self::FindSpiPort($next_hwid);
+        return self::FindI2cPort($next_hwid);
     }
 
     /**
-     * Starts the enumeration of SPI ports currently accessible.
-     * Use the method YSpiPort::nextSpiPort() to iterate on
-     * next SPI ports.
+     * Starts the enumeration of I2C ports currently accessible.
+     * Use the method YI2cPort::nextI2cPort() to iterate on
+     * next I2C ports.
      *
-     * @return YSpiPort : a pointer to a YSpiPort object, corresponding to
-     *         the first SPI port currently online, or a null pointer
+     * @return YI2cPort : a pointer to a YI2cPort object, corresponding to
+     *         the first I2C port currently online, or a null pointer
      *         if there are none.
      */
-    public static function FirstSpiPort()
-    {   $next_hwid = YAPI::getFirstHardwareId('SpiPort');
+    public static function FirstI2cPort()
+    {   $next_hwid = YAPI::getFirstHardwareId('I2cPort');
         if($next_hwid == null) return null;
-        return self::FindSpiPort($next_hwid);
+        return self::FindI2cPort($next_hwid);
     }
 
-    //--- (end of generated code: YSpiPort implementation)
+    //--- (end of generated code: YI2cPort implementation)
 
 };
 
-//--- (generated code: YSpiPort functions)
+//--- (generated code: YI2cPort functions)
 
 /**
- * Retrieves a SPI port for a given identifier.
+ * Retrieves an I2C port for a given identifier.
  * The identifier can be specified using several formats:
  * <ul>
  * <li>FunctionLogicalName</li>
@@ -1597,11 +1408,11 @@ class YSpiPort extends YFunction
  * <li>ModuleLogicalName.FunctionLogicalName</li>
  * </ul>
  *
- * This function does not require that the SPI port is online at the time
+ * This function does not require that the I2C port is online at the time
  * it is invoked. The returned object is nevertheless valid.
- * Use the method isOnline() to test if the SPI port is
+ * Use the method isOnline() to test if the I2C port is
  * indeed online at a given time. In case of ambiguity when looking for
- * a SPI port by logical name, no error is notified: the first instance
+ * an I2C port by logical name, no error is notified: the first instance
  * found is returned. The search is performed first by hardware name,
  * then by logical name.
  *
@@ -1609,29 +1420,29 @@ class YSpiPort extends YFunction
  * you are certain that the matching device is plugged, make sure that you did
  * call registerHub() at application initialization time.
  *
- * @param string $func : a string that uniquely characterizes the SPI port, for instance
- *         YSPIMK01.spiPort.
+ * @param string $func : a string that uniquely characterizes the I2C port, for instance
+ *         YI2CMK01.i2cPort.
  *
- * @return YSpiPort : a YSpiPort object allowing you to drive the SPI port.
+ * @return YI2cPort : a YI2cPort object allowing you to drive the I2C port.
  */
-function yFindSpiPort($func)
+function yFindI2cPort($func)
 {
-    return YSpiPort::FindSpiPort($func);
+    return YI2cPort::FindI2cPort($func);
 }
 
 /**
- * Starts the enumeration of SPI ports currently accessible.
- * Use the method YSpiPort::nextSpiPort() to iterate on
- * next SPI ports.
+ * Starts the enumeration of I2C ports currently accessible.
+ * Use the method YI2cPort::nextI2cPort() to iterate on
+ * next I2C ports.
  *
- * @return YSpiPort : a pointer to a YSpiPort object, corresponding to
- *         the first SPI port currently online, or a null pointer
+ * @return YI2cPort : a pointer to a YI2cPort object, corresponding to
+ *         the first I2C port currently online, or a null pointer
  *         if there are none.
  */
-function yFirstSpiPort()
+function yFirstI2cPort()
 {
-    return YSpiPort::FirstSpiPort();
+    return YI2cPort::FirstI2cPort();
 }
 
-//--- (end of generated code: YSpiPort functions)
+//--- (end of generated code: YI2cPort functions)
 ?>

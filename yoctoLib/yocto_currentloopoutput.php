@@ -1,11 +1,11 @@
 <?php
 /*********************************************************************
  *
- * $Id: yocto_currentloopoutput.php 23243 2016-02-23 14:13:12Z seb $
+ *  $Id: yocto_currentloopoutput.php 43580 2021-01-26 17:46:01Z mvuilleu $
  *
- * Implements YCurrentLoopOutput, the high-level API for CurrentLoopOutput functions
+ *  Implements YCurrentLoopOutput, the high-level API for CurrentLoopOutput functions
  *
- * - - - - - - - - - License information: - - - - - - - - - 
+ *  - - - - - - - - - License information: - - - - - - - - -
  *
  *  Copyright (C) 2011 and beyond by Yoctopuce Sarl, Switzerland.
  *
@@ -24,7 +24,7 @@
  *  obligations.
  *
  *  THE SOFTWARE AND DOCUMENTATION ARE PROVIDED 'AS IS' WITHOUT
- *  WARRANTY OF ANY KIND, EITHER EXPRESS OR IMPLIED, INCLUDING 
+ *  WARRANTY OF ANY KIND, EITHER EXPRESS OR IMPLIED, INCLUDING
  *  WITHOUT LIMITATION, ANY WARRANTY OF MERCHANTABILITY, FITNESS
  *  FOR A PARTICULAR PURPOSE, TITLE AND NON-INFRINGEMENT. IN NO
  *  EVENT SHALL LICENSOR BE LIABLE FOR ANY INCIDENTAL, SPECIAL,
@@ -49,13 +49,16 @@ if(!defined('Y_CURRENT_INVALID'))            define('Y_CURRENT_INVALID',        
 if(!defined('Y_CURRENTTRANSITION_INVALID'))  define('Y_CURRENTTRANSITION_INVALID', YAPI_INVALID_STRING);
 if(!defined('Y_CURRENTATSTARTUP_INVALID'))   define('Y_CURRENTATSTARTUP_INVALID',  YAPI_INVALID_DOUBLE);
 //--- (end of YCurrentLoopOutput definitions)
+    #--- (YCurrentLoopOutput yapiwrapper)
+   #--- (end of YCurrentLoopOutput yapiwrapper)
 
 //--- (YCurrentLoopOutput declaration)
 /**
- * YCurrentLoopOutput Class: CurrentLoopOutput function interface
+ * YCurrentLoopOutput Class: 4-20mA output control interface, available for instance in the Yocto-4-20mA-Tx
  *
- * The Yoctopuce application programming interface allows you to change the value of the 4-20mA
- * output as well as to know the current loop state.
+ * The YCurrentLoopOutput class allows you to drive a 4-20mA output
+ * by regulating the current flowing through the current loop.
+ * It can also provide information about the power state of the current loop.
  */
 class YCurrentLoopOutput extends YFunction
 {
@@ -107,12 +110,13 @@ class YCurrentLoopOutput extends YFunction
 
     /**
      * Changes the current loop, the valid range is from 3 to 21mA. If the loop is
-     * not propely powered, the  target current is not reached and
+     * not properly powered, the  target current is not reached and
      * loopPower is set to LOWPWR.
      *
-     * @param newval : a floating point number corresponding to the current loop, the valid range is from 3 to 21mA
+     * @param double $newval : a floating point number corresponding to the current loop, the valid range
+     * is from 3 to 21mA
      *
-     * @return YAPI_SUCCESS if the call succeeds.
+     * @return integer : YAPI::SUCCESS if the call succeeds.
      *
      * On failure, throws an exception or returns a negative error code.
      */
@@ -125,28 +129,32 @@ class YCurrentLoopOutput extends YFunction
     /**
      * Returns the loop current set point in mA.
      *
-     * @return a floating point number corresponding to the loop current set point in mA
+     * @return double : a floating point number corresponding to the loop current set point in mA
      *
-     * On failure, throws an exception or returns Y_CURRENT_INVALID.
+     * On failure, throws an exception or returns YCurrentLoopOutput::CURRENT_INVALID.
      */
     public function get_current()
     {
+        // $res                    is a double;
         if ($this->_cacheExpiration <= YAPI::GetTickCount()) {
-            if ($this->load(YAPI::$defaultCacheValidity) != YAPI_SUCCESS) {
+            if ($this->load(YAPI::$_yapiContext->GetCacheValidity()) != YAPI_SUCCESS) {
                 return Y_CURRENT_INVALID;
             }
         }
-        return $this->_current;
+        $res = $this->_current;
+        return $res;
     }
 
     public function get_currentTransition()
     {
+        // $res                    is a string;
         if ($this->_cacheExpiration <= YAPI::GetTickCount()) {
-            if ($this->load(YAPI::$defaultCacheValidity) != YAPI_SUCCESS) {
+            if ($this->load(YAPI::$_yapiContext->GetCacheValidity()) != YAPI_SUCCESS) {
                 return Y_CURRENTTRANSITION_INVALID;
             }
         }
-        return $this->_currentTransition;
+        $res = $this->_currentTransition;
+        return $res;
     }
 
     public function set_currentTransition($newval)
@@ -159,9 +167,9 @@ class YCurrentLoopOutput extends YFunction
      * Changes the loop current at device start up. Remember to call the matching
      * module saveToFlash() method, otherwise this call has no effect.
      *
-     * @param newval : a floating point number corresponding to the loop current at device start up
+     * @param double $newval : a floating point number corresponding to the loop current at device start up
      *
-     * @return YAPI_SUCCESS if the call succeeds.
+     * @return integer : YAPI::SUCCESS if the call succeeds.
      *
      * On failure, throws an exception or returns a negative error code.
      */
@@ -174,18 +182,20 @@ class YCurrentLoopOutput extends YFunction
     /**
      * Returns the current in the loop at device startup, in mA.
      *
-     * @return a floating point number corresponding to the current in the loop at device startup, in mA
+     * @return double : a floating point number corresponding to the current in the loop at device startup, in mA
      *
-     * On failure, throws an exception or returns Y_CURRENTATSTARTUP_INVALID.
+     * On failure, throws an exception or returns YCurrentLoopOutput::CURRENTATSTARTUP_INVALID.
      */
     public function get_currentAtStartUp()
     {
+        // $res                    is a double;
         if ($this->_cacheExpiration <= YAPI::GetTickCount()) {
-            if ($this->load(YAPI::$defaultCacheValidity) != YAPI_SUCCESS) {
+            if ($this->load(YAPI::$_yapiContext->GetCacheValidity()) != YAPI_SUCCESS) {
                 return Y_CURRENTATSTARTUP_INVALID;
             }
         }
-        return $this->_currentAtStartUp;
+        $res = $this->_currentAtStartUp;
+        return $res;
     }
 
     /**
@@ -193,19 +203,22 @@ class YCurrentLoopOutput extends YFunction
      * is powered. NOPWR: the loop in not powered. LOWPWR: the loop is not
      * powered enough to maintain the current required (insufficient voltage).
      *
-     * @return a value among Y_LOOPPOWER_NOPWR, Y_LOOPPOWER_LOWPWR and Y_LOOPPOWER_POWEROK corresponding
-     * to the loop powerstate
+     * @return integer : a value among YCurrentLoopOutput::LOOPPOWER_NOPWR,
+     * YCurrentLoopOutput::LOOPPOWER_LOWPWR and YCurrentLoopOutput::LOOPPOWER_POWEROK corresponding to the
+     * loop powerstate
      *
-     * On failure, throws an exception or returns Y_LOOPPOWER_INVALID.
+     * On failure, throws an exception or returns YCurrentLoopOutput::LOOPPOWER_INVALID.
      */
     public function get_loopPower()
     {
+        // $res                    is a enumLOOPPWRSTATE;
         if ($this->_cacheExpiration <= YAPI::GetTickCount()) {
-            if ($this->load(YAPI::$defaultCacheValidity) != YAPI_SUCCESS) {
+            if ($this->load(YAPI::$_yapiContext->GetCacheValidity()) != YAPI_SUCCESS) {
                 return Y_LOOPPOWER_INVALID;
             }
         }
-        return $this->_loopPower;
+        $res = $this->_loopPower;
+        return $res;
     }
 
     /**
@@ -221,15 +234,20 @@ class YCurrentLoopOutput extends YFunction
      *
      * This function does not require that the 4-20mA output is online at the time
      * it is invoked. The returned object is nevertheless valid.
-     * Use the method YCurrentLoopOutput.isOnline() to test if the 4-20mA output is
+     * Use the method isOnline() to test if the 4-20mA output is
      * indeed online at a given time. In case of ambiguity when looking for
      * a 4-20mA output by logical name, no error is notified: the first instance
      * found is returned. The search is performed first by hardware name,
      * then by logical name.
      *
-     * @param func : a string that uniquely characterizes the 4-20mA output
+     * If a call to this object's is_online() method returns FALSE although
+     * you are certain that the matching device is plugged, make sure that you did
+     * call registerHub() at application initialization time.
      *
-     * @return a YCurrentLoopOutput object allowing you to drive the 4-20mA output.
+     * @param string $func : a string that uniquely characterizes the 4-20mA output, for instance
+     *         TX420MA1.currentLoopOutput.
+     *
+     * @return YCurrentLoopOutput : a YCurrentLoopOutput object allowing you to drive the 4-20mA output.
      */
     public static function FindCurrentLoopOutput($func)
     {
@@ -243,14 +261,14 @@ class YCurrentLoopOutput extends YFunction
     }
 
     /**
-     * Performs a smooth transistion of current flowing in the loop. Any current explicit
+     * Performs a smooth transition of current flowing in the loop. Any current explicit
      * change cancels any ongoing transition process.
      *
      * @param mA_target   : new current value at the end of the transition
-     *         (floating-point number, representing the transition duration in mA)
-     * @param ms_duration : total duration of the transition, in milliseconds
+     *         (floating-point number, representing the end current in mA)
+     * @param integer $ms_duration : total duration of the transition, in milliseconds
      *
-     * @return YAPI_SUCCESS when the call succeeds.
+     * @return integer : YAPI::SUCCESS when the call succeeds.
      */
     public function currentMove($mA_target,$ms_duration)
     {
@@ -261,8 +279,8 @@ class YCurrentLoopOutput extends YFunction
         if ($mA_target > 21.0) {
             $mA_target = 21.0;
         }
-        $newval = sprintf('%d:%d', round($mA_target*1000), $ms_duration);
-        // may throw an exception
+        $newval = sprintf('%d:%d', round($mA_target*65536), $ms_duration);
+
         return $this->set_currentTransition($newval);
     }
 
@@ -289,8 +307,11 @@ class YCurrentLoopOutput extends YFunction
 
     /**
      * Continues the enumeration of 4-20mA outputs started using yFirstCurrentLoopOutput().
+     * Caution: You can't make any assumption about the returned 4-20mA outputs order.
+     * If you want to find a specific a 4-20mA output, use CurrentLoopOutput.findCurrentLoopOutput()
+     * and a hardwareID or a logical name.
      *
-     * @return a pointer to a YCurrentLoopOutput object, corresponding to
+     * @return YCurrentLoopOutput : a pointer to a YCurrentLoopOutput object, corresponding to
      *         a 4-20mA output currently online, or a null pointer
      *         if there are no more 4-20mA outputs to enumerate.
      */
@@ -299,15 +320,15 @@ class YCurrentLoopOutput extends YFunction
         if($resolve->errorType != YAPI_SUCCESS) return null;
         $next_hwid = YAPI::getNextHardwareId($this->_className, $resolve->result);
         if($next_hwid == null) return null;
-        return yFindCurrentLoopOutput($next_hwid);
+        return self::FindCurrentLoopOutput($next_hwid);
     }
 
     /**
      * Starts the enumeration of 4-20mA outputs currently accessible.
-     * Use the method YCurrentLoopOutput.nextCurrentLoopOutput() to iterate on
+     * Use the method YCurrentLoopOutput::nextCurrentLoopOutput() to iterate on
      * next 4-20mA outputs.
      *
-     * @return a pointer to a YCurrentLoopOutput object, corresponding to
+     * @return YCurrentLoopOutput : a pointer to a YCurrentLoopOutput object, corresponding to
      *         the first 4-20mA output currently online, or a null pointer
      *         if there are none.
      */
@@ -321,7 +342,7 @@ class YCurrentLoopOutput extends YFunction
 
 };
 
-//--- (CurrentLoopOutput functions)
+//--- (YCurrentLoopOutput functions)
 
 /**
  * Retrieves a 4-20mA output for a given identifier.
@@ -336,15 +357,20 @@ class YCurrentLoopOutput extends YFunction
  *
  * This function does not require that the 4-20mA output is online at the time
  * it is invoked. The returned object is nevertheless valid.
- * Use the method YCurrentLoopOutput.isOnline() to test if the 4-20mA output is
+ * Use the method isOnline() to test if the 4-20mA output is
  * indeed online at a given time. In case of ambiguity when looking for
  * a 4-20mA output by logical name, no error is notified: the first instance
  * found is returned. The search is performed first by hardware name,
  * then by logical name.
  *
- * @param func : a string that uniquely characterizes the 4-20mA output
+ * If a call to this object's is_online() method returns FALSE although
+ * you are certain that the matching device is plugged, make sure that you did
+ * call registerHub() at application initialization time.
  *
- * @return a YCurrentLoopOutput object allowing you to drive the 4-20mA output.
+ * @param string $func : a string that uniquely characterizes the 4-20mA output, for instance
+ *         TX420MA1.currentLoopOutput.
+ *
+ * @return YCurrentLoopOutput : a YCurrentLoopOutput object allowing you to drive the 4-20mA output.
  */
 function yFindCurrentLoopOutput($func)
 {
@@ -353,10 +379,10 @@ function yFindCurrentLoopOutput($func)
 
 /**
  * Starts the enumeration of 4-20mA outputs currently accessible.
- * Use the method YCurrentLoopOutput.nextCurrentLoopOutput() to iterate on
+ * Use the method YCurrentLoopOutput::nextCurrentLoopOutput() to iterate on
  * next 4-20mA outputs.
  *
- * @return a pointer to a YCurrentLoopOutput object, corresponding to
+ * @return YCurrentLoopOutput : a pointer to a YCurrentLoopOutput object, corresponding to
  *         the first 4-20mA output currently online, or a null pointer
  *         if there are none.
  */
@@ -365,5 +391,5 @@ function yFirstCurrentLoopOutput()
     return YCurrentLoopOutput::FirstCurrentLoopOutput();
 }
 
-//--- (end of CurrentLoopOutput functions)
+//--- (end of YCurrentLoopOutput functions)
 ?>

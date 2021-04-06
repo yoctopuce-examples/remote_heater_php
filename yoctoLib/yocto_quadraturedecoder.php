@@ -1,11 +1,11 @@
 <?php
 /*********************************************************************
  *
- * $Id: yocto_quadraturedecoder.php 23243 2016-02-23 14:13:12Z seb $
+ *  $Id: yocto_quadraturedecoder.php 44023 2021-02-25 09:23:38Z web $
  *
- * Implements YQuadratureDecoder, the high-level API for QuadratureDecoder functions
+ *  Implements YQuadratureDecoder, the high-level API for QuadratureDecoder functions
  *
- * - - - - - - - - - License information: - - - - - - - - - 
+ *  - - - - - - - - - License information: - - - - - - - - -
  *
  *  Copyright (C) 2011 and beyond by Yoctopuce Sarl, Switzerland.
  *
@@ -24,7 +24,7 @@
  *  obligations.
  *
  *  THE SOFTWARE AND DOCUMENTATION ARE PROVIDED 'AS IS' WITHOUT
- *  WARRANTY OF ANY KIND, EITHER EXPRESS OR IMPLIED, INCLUDING 
+ *  WARRANTY OF ANY KIND, EITHER EXPRESS OR IMPLIED, INCLUDING
  *  WITHOUT LIMITATION, ANY WARRANTY OF MERCHANTABILITY, FITNESS
  *  FOR A PARTICULAR PURPOSE, TITLE AND NON-INFRINGEMENT. IN NO
  *  EVENT SHALL LICENSOR BE LIABLE FOR ANY INCIDENTAL, SPECIAL,
@@ -43,29 +43,35 @@
 //--- (YQuadratureDecoder definitions)
 if(!defined('Y_DECODING_OFF'))               define('Y_DECODING_OFF',              0);
 if(!defined('Y_DECODING_ON'))                define('Y_DECODING_ON',               1);
+if(!defined('Y_DECODING_DIV2'))              define('Y_DECODING_DIV2',             2);
+if(!defined('Y_DECODING_DIV4'))              define('Y_DECODING_DIV4',             3);
 if(!defined('Y_DECODING_INVALID'))           define('Y_DECODING_INVALID',          -1);
 if(!defined('Y_SPEED_INVALID'))              define('Y_SPEED_INVALID',             YAPI_INVALID_DOUBLE);
 //--- (end of YQuadratureDecoder definitions)
+    #--- (YQuadratureDecoder yapiwrapper)
+   #--- (end of YQuadratureDecoder yapiwrapper)
 
 //--- (YQuadratureDecoder declaration)
 /**
- * YQuadratureDecoder Class: QuadratureDecoder function interface
+ * YQuadratureDecoder Class: quadrature decoder control interface, available for instance in the Yocto-PWM-Rx
  *
- * The class YQuadratureDecoder allows you to decode a two-wire signal produced by a
- * quadrature encoder. It inherits from YSensor class the core functions to read measurements,
- * register callback functions, access to the autonomous datalogger.
+ * The YQuadratureDecoder class allows you to read and configure Yoctopuce quadrature decoders.
+ * It inherits from YSensor class the core functions to read measurements,
+ * to register callback functions, and to access the autonomous datalogger.
  */
 class YQuadratureDecoder extends YSensor
 {
     const SPEED_INVALID                  = YAPI_INVALID_DOUBLE;
     const DECODING_OFF                   = 0;
     const DECODING_ON                    = 1;
+    const DECODING_DIV2                  = 2;
+    const DECODING_DIV4                  = 3;
     const DECODING_INVALID               = -1;
     //--- (end of YQuadratureDecoder declaration)
 
     //--- (YQuadratureDecoder attributes)
     protected $_speed                    = Y_SPEED_INVALID;              // MeasureVal
-    protected $_decoding                 = Y_DECODING_INVALID;           // OnOff
+    protected $_decoding                 = Y_DECODING_INVALID;           // OffOnDiv
     //--- (end of YQuadratureDecoder attributes)
 
     function __construct($str_func)
@@ -94,11 +100,12 @@ class YQuadratureDecoder extends YSensor
 
     /**
      * Changes the current expected position of the quadrature decoder.
-     * Invoking this function implicitely activates the quadrature decoder.
+     * Invoking this function implicitly activates the quadrature decoder.
      *
-     * @param newval : a floating point number corresponding to the current expected position of the quadrature decoder
+     * @param double $newval : a floating point number corresponding to the current expected position of
+     * the quadrature decoder
      *
-     * @return YAPI_SUCCESS if the call succeeds.
+     * @return integer : YAPI::SUCCESS if the call succeeds.
      *
      * On failure, throws an exception or returns a negative error code.
      */
@@ -109,47 +116,55 @@ class YQuadratureDecoder extends YSensor
     }
 
     /**
-     * Returns the PWM frequency in Hz.
+     * Returns the increments frequency, in Hz.
      *
-     * @return a floating point number corresponding to the PWM frequency in Hz
+     * @return double : a floating point number corresponding to the increments frequency, in Hz
      *
-     * On failure, throws an exception or returns Y_SPEED_INVALID.
+     * On failure, throws an exception or returns YQuadratureDecoder::SPEED_INVALID.
      */
     public function get_speed()
     {
+        // $res                    is a double;
         if ($this->_cacheExpiration <= YAPI::GetTickCount()) {
-            if ($this->load(YAPI::$defaultCacheValidity) != YAPI_SUCCESS) {
+            if ($this->load(YAPI::$_yapiContext->GetCacheValidity()) != YAPI_SUCCESS) {
                 return Y_SPEED_INVALID;
             }
         }
-        return $this->_speed;
+        $res = $this->_speed;
+        return $res;
     }
 
     /**
      * Returns the current activation state of the quadrature decoder.
      *
-     * @return either Y_DECODING_OFF or Y_DECODING_ON, according to the current activation state of the
-     * quadrature decoder
+     * @return integer : a value among YQuadratureDecoder::DECODING_OFF, YQuadratureDecoder::DECODING_ON,
+     * YQuadratureDecoder::DECODING_DIV2 and YQuadratureDecoder::DECODING_DIV4 corresponding to the current
+     * activation state of the quadrature decoder
      *
-     * On failure, throws an exception or returns Y_DECODING_INVALID.
+     * On failure, throws an exception or returns YQuadratureDecoder::DECODING_INVALID.
      */
     public function get_decoding()
     {
+        // $res                    is a enumOFFONDIV;
         if ($this->_cacheExpiration <= YAPI::GetTickCount()) {
-            if ($this->load(YAPI::$defaultCacheValidity) != YAPI_SUCCESS) {
+            if ($this->load(YAPI::$_yapiContext->GetCacheValidity()) != YAPI_SUCCESS) {
                 return Y_DECODING_INVALID;
             }
         }
-        return $this->_decoding;
+        $res = $this->_decoding;
+        return $res;
     }
 
     /**
      * Changes the activation state of the quadrature decoder.
+     * Remember to call the saveToFlash()
+     * method of the module if the modification must be kept.
      *
-     * @param newval : either Y_DECODING_OFF or Y_DECODING_ON, according to the activation state of the
-     * quadrature decoder
+     * @param integer $newval : a value among YQuadratureDecoder::DECODING_OFF,
+     * YQuadratureDecoder::DECODING_ON, YQuadratureDecoder::DECODING_DIV2 and
+     * YQuadratureDecoder::DECODING_DIV4 corresponding to the activation state of the quadrature decoder
      *
-     * @return YAPI_SUCCESS if the call succeeds.
+     * @return integer : YAPI::SUCCESS if the call succeeds.
      *
      * On failure, throws an exception or returns a negative error code.
      */
@@ -172,15 +187,20 @@ class YQuadratureDecoder extends YSensor
      *
      * This function does not require that the quadrature decoder is online at the time
      * it is invoked. The returned object is nevertheless valid.
-     * Use the method YQuadratureDecoder.isOnline() to test if the quadrature decoder is
+     * Use the method isOnline() to test if the quadrature decoder is
      * indeed online at a given time. In case of ambiguity when looking for
      * a quadrature decoder by logical name, no error is notified: the first instance
      * found is returned. The search is performed first by hardware name,
      * then by logical name.
      *
-     * @param func : a string that uniquely characterizes the quadrature decoder
+     * If a call to this object's is_online() method returns FALSE although
+     * you are certain that the matching device is plugged, make sure that you did
+     * call registerHub() at application initialization time.
      *
-     * @return a YQuadratureDecoder object allowing you to drive the quadrature decoder.
+     * @param string $func : a string that uniquely characterizes the quadrature decoder, for instance
+     *         YPWMRX01.quadratureDecoder.
+     *
+     * @return YQuadratureDecoder : a YQuadratureDecoder object allowing you to drive the quadrature decoder.
      */
     public static function FindQuadratureDecoder($func)
     {
@@ -207,8 +227,11 @@ class YQuadratureDecoder extends YSensor
 
     /**
      * Continues the enumeration of quadrature decoders started using yFirstQuadratureDecoder().
+     * Caution: You can't make any assumption about the returned quadrature decoders order.
+     * If you want to find a specific a quadrature decoder, use QuadratureDecoder.findQuadratureDecoder()
+     * and a hardwareID or a logical name.
      *
-     * @return a pointer to a YQuadratureDecoder object, corresponding to
+     * @return YQuadratureDecoder : a pointer to a YQuadratureDecoder object, corresponding to
      *         a quadrature decoder currently online, or a null pointer
      *         if there are no more quadrature decoders to enumerate.
      */
@@ -217,15 +240,15 @@ class YQuadratureDecoder extends YSensor
         if($resolve->errorType != YAPI_SUCCESS) return null;
         $next_hwid = YAPI::getNextHardwareId($this->_className, $resolve->result);
         if($next_hwid == null) return null;
-        return yFindQuadratureDecoder($next_hwid);
+        return self::FindQuadratureDecoder($next_hwid);
     }
 
     /**
      * Starts the enumeration of quadrature decoders currently accessible.
-     * Use the method YQuadratureDecoder.nextQuadratureDecoder() to iterate on
+     * Use the method YQuadratureDecoder::nextQuadratureDecoder() to iterate on
      * next quadrature decoders.
      *
-     * @return a pointer to a YQuadratureDecoder object, corresponding to
+     * @return YQuadratureDecoder : a pointer to a YQuadratureDecoder object, corresponding to
      *         the first quadrature decoder currently online, or a null pointer
      *         if there are none.
      */
@@ -239,7 +262,7 @@ class YQuadratureDecoder extends YSensor
 
 };
 
-//--- (QuadratureDecoder functions)
+//--- (YQuadratureDecoder functions)
 
 /**
  * Retrieves a quadrature decoder for a given identifier.
@@ -254,15 +277,20 @@ class YQuadratureDecoder extends YSensor
  *
  * This function does not require that the quadrature decoder is online at the time
  * it is invoked. The returned object is nevertheless valid.
- * Use the method YQuadratureDecoder.isOnline() to test if the quadrature decoder is
+ * Use the method isOnline() to test if the quadrature decoder is
  * indeed online at a given time. In case of ambiguity when looking for
  * a quadrature decoder by logical name, no error is notified: the first instance
  * found is returned. The search is performed first by hardware name,
  * then by logical name.
  *
- * @param func : a string that uniquely characterizes the quadrature decoder
+ * If a call to this object's is_online() method returns FALSE although
+ * you are certain that the matching device is plugged, make sure that you did
+ * call registerHub() at application initialization time.
  *
- * @return a YQuadratureDecoder object allowing you to drive the quadrature decoder.
+ * @param string $func : a string that uniquely characterizes the quadrature decoder, for instance
+ *         YPWMRX01.quadratureDecoder.
+ *
+ * @return YQuadratureDecoder : a YQuadratureDecoder object allowing you to drive the quadrature decoder.
  */
 function yFindQuadratureDecoder($func)
 {
@@ -271,10 +299,10 @@ function yFindQuadratureDecoder($func)
 
 /**
  * Starts the enumeration of quadrature decoders currently accessible.
- * Use the method YQuadratureDecoder.nextQuadratureDecoder() to iterate on
+ * Use the method YQuadratureDecoder::nextQuadratureDecoder() to iterate on
  * next quadrature decoders.
  *
- * @return a pointer to a YQuadratureDecoder object, corresponding to
+ * @return YQuadratureDecoder : a pointer to a YQuadratureDecoder object, corresponding to
  *         the first quadrature decoder currently online, or a null pointer
  *         if there are none.
  */
@@ -283,5 +311,5 @@ function yFirstQuadratureDecoder()
     return YQuadratureDecoder::FirstQuadratureDecoder();
 }
 
-//--- (end of QuadratureDecoder functions)
+//--- (end of YQuadratureDecoder functions)
 ?>

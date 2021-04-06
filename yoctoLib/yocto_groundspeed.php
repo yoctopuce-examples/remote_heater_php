@@ -1,11 +1,11 @@
 <?php
 /*********************************************************************
  *
- * $Id: yocto_groundspeed.php 23243 2016-02-23 14:13:12Z seb $
+ *  $Id: yocto_groundspeed.php 43580 2021-01-26 17:46:01Z mvuilleu $
  *
- * Implements YGroundSpeed, the high-level API for GroundSpeed functions
+ *  Implements YGroundSpeed, the high-level API for GroundSpeed functions
  *
- * - - - - - - - - - License information: - - - - - - - - - 
+ *  - - - - - - - - - License information: - - - - - - - - -
  *
  *  Copyright (C) 2011 and beyond by Yoctopuce Sarl, Switzerland.
  *
@@ -24,7 +24,7 @@
  *  obligations.
  *
  *  THE SOFTWARE AND DOCUMENTATION ARE PROVIDED 'AS IS' WITHOUT
- *  WARRANTY OF ANY KIND, EITHER EXPRESS OR IMPLIED, INCLUDING 
+ *  WARRANTY OF ANY KIND, EITHER EXPRESS OR IMPLIED, INCLUDING
  *  WITHOUT LIMITATION, ANY WARRANTY OF MERCHANTABILITY, FITNESS
  *  FOR A PARTICULAR PURPOSE, TITLE AND NON-INFRINGEMENT. IN NO
  *  EVENT SHALL LICENSOR BE LIABLE FOR ANY INCIDENTAL, SPECIAL,
@@ -42,15 +42,16 @@
 //--- (end of YGroundSpeed return codes)
 //--- (YGroundSpeed definitions)
 //--- (end of YGroundSpeed definitions)
+    #--- (YGroundSpeed yapiwrapper)
+   #--- (end of YGroundSpeed yapiwrapper)
 
 //--- (YGroundSpeed declaration)
 /**
- * YGroundSpeed Class: GroundSpeed function interface
+ * YGroundSpeed Class: ground speed sensor control interface, available for instance in the Yocto-GPS-V2
  *
- * The Yoctopuce class YGroundSpeed allows you to read the ground speed from Yoctopuce
- * geolocalization sensors. It inherits from the YSensor class the core functions to
- * read measurements, register callback functions, access the autonomous
- * datalogger.
+ * The YGroundSpeed class allows you to read and configure Yoctopuce ground speed sensors.
+ * It inherits from YSensor class the core functions to read measurements,
+ * to register callback functions, and to access the autonomous datalogger.
  */
 class YGroundSpeed extends YSensor
 {
@@ -83,15 +84,20 @@ class YGroundSpeed extends YSensor
      *
      * This function does not require that the ground speed sensor is online at the time
      * it is invoked. The returned object is nevertheless valid.
-     * Use the method YGroundSpeed.isOnline() to test if the ground speed sensor is
+     * Use the method isOnline() to test if the ground speed sensor is
      * indeed online at a given time. In case of ambiguity when looking for
      * a ground speed sensor by logical name, no error is notified: the first instance
      * found is returned. The search is performed first by hardware name,
      * then by logical name.
      *
-     * @param func : a string that uniquely characterizes the ground speed sensor
+     * If a call to this object's is_online() method returns FALSE although
+     * you are certain that the matching device is plugged, make sure that you did
+     * call registerHub() at application initialization time.
      *
-     * @return a YGroundSpeed object allowing you to drive the ground speed sensor.
+     * @param string $func : a string that uniquely characterizes the ground speed sensor, for instance
+     *         YGNSSMK2.groundSpeed.
+     *
+     * @return YGroundSpeed : a YGroundSpeed object allowing you to drive the ground speed sensor.
      */
     public static function FindGroundSpeed($func)
     {
@@ -106,8 +112,11 @@ class YGroundSpeed extends YSensor
 
     /**
      * Continues the enumeration of ground speed sensors started using yFirstGroundSpeed().
+     * Caution: You can't make any assumption about the returned ground speed sensors order.
+     * If you want to find a specific a ground speed sensor, use GroundSpeed.findGroundSpeed()
+     * and a hardwareID or a logical name.
      *
-     * @return a pointer to a YGroundSpeed object, corresponding to
+     * @return YGroundSpeed : a pointer to a YGroundSpeed object, corresponding to
      *         a ground speed sensor currently online, or a null pointer
      *         if there are no more ground speed sensors to enumerate.
      */
@@ -116,15 +125,15 @@ class YGroundSpeed extends YSensor
         if($resolve->errorType != YAPI_SUCCESS) return null;
         $next_hwid = YAPI::getNextHardwareId($this->_className, $resolve->result);
         if($next_hwid == null) return null;
-        return yFindGroundSpeed($next_hwid);
+        return self::FindGroundSpeed($next_hwid);
     }
 
     /**
      * Starts the enumeration of ground speed sensors currently accessible.
-     * Use the method YGroundSpeed.nextGroundSpeed() to iterate on
+     * Use the method YGroundSpeed::nextGroundSpeed() to iterate on
      * next ground speed sensors.
      *
-     * @return a pointer to a YGroundSpeed object, corresponding to
+     * @return YGroundSpeed : a pointer to a YGroundSpeed object, corresponding to
      *         the first ground speed sensor currently online, or a null pointer
      *         if there are none.
      */
@@ -138,7 +147,7 @@ class YGroundSpeed extends YSensor
 
 };
 
-//--- (GroundSpeed functions)
+//--- (YGroundSpeed functions)
 
 /**
  * Retrieves a ground speed sensor for a given identifier.
@@ -153,15 +162,20 @@ class YGroundSpeed extends YSensor
  *
  * This function does not require that the ground speed sensor is online at the time
  * it is invoked. The returned object is nevertheless valid.
- * Use the method YGroundSpeed.isOnline() to test if the ground speed sensor is
+ * Use the method isOnline() to test if the ground speed sensor is
  * indeed online at a given time. In case of ambiguity when looking for
  * a ground speed sensor by logical name, no error is notified: the first instance
  * found is returned. The search is performed first by hardware name,
  * then by logical name.
  *
- * @param func : a string that uniquely characterizes the ground speed sensor
+ * If a call to this object's is_online() method returns FALSE although
+ * you are certain that the matching device is plugged, make sure that you did
+ * call registerHub() at application initialization time.
  *
- * @return a YGroundSpeed object allowing you to drive the ground speed sensor.
+ * @param string $func : a string that uniquely characterizes the ground speed sensor, for instance
+ *         YGNSSMK2.groundSpeed.
+ *
+ * @return YGroundSpeed : a YGroundSpeed object allowing you to drive the ground speed sensor.
  */
 function yFindGroundSpeed($func)
 {
@@ -170,10 +184,10 @@ function yFindGroundSpeed($func)
 
 /**
  * Starts the enumeration of ground speed sensors currently accessible.
- * Use the method YGroundSpeed.nextGroundSpeed() to iterate on
+ * Use the method YGroundSpeed::nextGroundSpeed() to iterate on
  * next ground speed sensors.
  *
- * @return a pointer to a YGroundSpeed object, corresponding to
+ * @return YGroundSpeed : a pointer to a YGroundSpeed object, corresponding to
  *         the first ground speed sensor currently online, or a null pointer
  *         if there are none.
  */
@@ -182,5 +196,5 @@ function yFirstGroundSpeed()
     return YGroundSpeed::FirstGroundSpeed();
 }
 
-//--- (end of GroundSpeed functions)
+//--- (end of YGroundSpeed functions)
 ?>

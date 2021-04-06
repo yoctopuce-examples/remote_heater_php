@@ -1,11 +1,11 @@
 <?php
 /*********************************************************************
  *
- * $Id: yocto_pwmpowersource.php 23243 2016-02-23 14:13:12Z seb $
+ *  $Id: yocto_pwmpowersource.php 43580 2021-01-26 17:46:01Z mvuilleu $
  *
- * Implements YPwmPowerSource, the high-level API for PwmPowerSource functions
+ *  Implements YPwmPowerSource, the high-level API for PwmPowerSource functions
  *
- * - - - - - - - - - License information: - - - - - - - - - 
+ *  - - - - - - - - - License information: - - - - - - - - -
  *
  *  Copyright (C) 2011 and beyond by Yoctopuce Sarl, Switzerland.
  *
@@ -24,7 +24,7 @@
  *  obligations.
  *
  *  THE SOFTWARE AND DOCUMENTATION ARE PROVIDED 'AS IS' WITHOUT
- *  WARRANTY OF ANY KIND, EITHER EXPRESS OR IMPLIED, INCLUDING 
+ *  WARRANTY OF ANY KIND, EITHER EXPRESS OR IMPLIED, INCLUDING
  *  WITHOUT LIMITATION, ANY WARRANTY OF MERCHANTABILITY, FITNESS
  *  FOR A PARTICULAR PURPOSE, TITLE AND NON-INFRINGEMENT. IN NO
  *  EVENT SHALL LICENSOR BE LIABLE FOR ANY INCIDENTAL, SPECIAL,
@@ -47,13 +47,15 @@ if(!defined('Y_POWERMODE_EXT_V'))            define('Y_POWERMODE_EXT_V',        
 if(!defined('Y_POWERMODE_OPNDRN'))           define('Y_POWERMODE_OPNDRN',          3);
 if(!defined('Y_POWERMODE_INVALID'))          define('Y_POWERMODE_INVALID',         -1);
 //--- (end of YPwmPowerSource definitions)
+    #--- (YPwmPowerSource yapiwrapper)
+   #--- (end of YPwmPowerSource yapiwrapper)
 
 //--- (YPwmPowerSource declaration)
 /**
- * YPwmPowerSource Class: PwmPowerSource function interface
+ * YPwmPowerSource Class: PWM generator power source control interface, available for instance in the Yocto-PWM-Tx
  *
- * The Yoctopuce application programming interface allows you to configure
- * the voltage source used by all PWM on the same device.
+ * The YPwmPowerSource class allows you to configure
+ * the voltage source used by all PWM outputs on the same device.
  */
 class YPwmPowerSource extends YFunction
 {
@@ -92,19 +94,22 @@ class YPwmPowerSource extends YFunction
     /**
      * Returns the selected power source for the PWM on the same device.
      *
-     * @return a value among Y_POWERMODE_USB_5V, Y_POWERMODE_USB_3V, Y_POWERMODE_EXT_V and
-     * Y_POWERMODE_OPNDRN corresponding to the selected power source for the PWM on the same device
+     * @return integer : a value among YPwmPowerSource::POWERMODE_USB_5V, YPwmPowerSource::POWERMODE_USB_3V,
+     * YPwmPowerSource::POWERMODE_EXT_V and YPwmPowerSource::POWERMODE_OPNDRN corresponding to the selected
+     * power source for the PWM on the same device
      *
-     * On failure, throws an exception or returns Y_POWERMODE_INVALID.
+     * On failure, throws an exception or returns YPwmPowerSource::POWERMODE_INVALID.
      */
     public function get_powerMode()
     {
+        // $res                    is a enumPWMPWRMODE;
         if ($this->_cacheExpiration <= YAPI::GetTickCount()) {
-            if ($this->load(YAPI::$defaultCacheValidity) != YAPI_SUCCESS) {
+            if ($this->load(YAPI::$_yapiContext->GetCacheValidity()) != YAPI_SUCCESS) {
                 return Y_POWERMODE_INVALID;
             }
         }
-        return $this->_powerMode;
+        $res = $this->_powerMode;
+        return $res;
     }
 
     /**
@@ -116,10 +121,11 @@ class YPwmPowerSource extends YFunction
      * If you want the change to be kept after a device reboot, make sure  to call the matching
      * module saveToFlash().
      *
-     * @param newval : a value among Y_POWERMODE_USB_5V, Y_POWERMODE_USB_3V, Y_POWERMODE_EXT_V and
-     * Y_POWERMODE_OPNDRN corresponding to  the PWM power source
+     * @param integer $newval : a value among YPwmPowerSource::POWERMODE_USB_5V,
+     * YPwmPowerSource::POWERMODE_USB_3V, YPwmPowerSource::POWERMODE_EXT_V and
+     * YPwmPowerSource::POWERMODE_OPNDRN corresponding to  the PWM power source
      *
-     * @return YAPI_SUCCESS if the call succeeds.
+     * @return integer : YAPI::SUCCESS if the call succeeds.
      *
      * On failure, throws an exception or returns a negative error code.
      */
@@ -130,7 +136,7 @@ class YPwmPowerSource extends YFunction
     }
 
     /**
-     * Retrieves a voltage source for a given identifier.
+     * Retrieves a PWM generator power source for a given identifier.
      * The identifier can be specified using several formats:
      * <ul>
      * <li>FunctionLogicalName</li>
@@ -140,17 +146,22 @@ class YPwmPowerSource extends YFunction
      * <li>ModuleLogicalName.FunctionLogicalName</li>
      * </ul>
      *
-     * This function does not require that the voltage source is online at the time
+     * This function does not require that the PWM generator power source is online at the time
      * it is invoked. The returned object is nevertheless valid.
-     * Use the method YPwmPowerSource.isOnline() to test if the voltage source is
+     * Use the method isOnline() to test if the PWM generator power source is
      * indeed online at a given time. In case of ambiguity when looking for
-     * a voltage source by logical name, no error is notified: the first instance
+     * a PWM generator power source by logical name, no error is notified: the first instance
      * found is returned. The search is performed first by hardware name,
      * then by logical name.
      *
-     * @param func : a string that uniquely characterizes the voltage source
+     * If a call to this object's is_online() method returns FALSE although
+     * you are certain that the matching device is plugged, make sure that you did
+     * call registerHub() at application initialization time.
      *
-     * @return a YPwmPowerSource object allowing you to drive the voltage source.
+     * @param string $func : a string that uniquely characterizes the PWM generator power source, for instance
+     *         YPWMTX01.pwmPowerSource.
+     *
+     * @return YPwmPowerSource : a YPwmPowerSource object allowing you to drive the PWM generator power source.
      */
     public static function FindPwmPowerSource($func)
     {
@@ -170,27 +181,30 @@ class YPwmPowerSource extends YFunction
     { return $this->set_powerMode($newval); }
 
     /**
-     * Continues the enumeration of Voltage sources started using yFirstPwmPowerSource().
+     * Continues the enumeration of PWM generator power sources started using yFirstPwmPowerSource().
+     * Caution: You can't make any assumption about the returned PWM generator power sources order.
+     * If you want to find a specific a PWM generator power source, use PwmPowerSource.findPwmPowerSource()
+     * and a hardwareID or a logical name.
      *
-     * @return a pointer to a YPwmPowerSource object, corresponding to
-     *         a voltage source currently online, or a null pointer
-     *         if there are no more Voltage sources to enumerate.
+     * @return YPwmPowerSource : a pointer to a YPwmPowerSource object, corresponding to
+     *         a PWM generator power source currently online, or a null pointer
+     *         if there are no more PWM generator power sources to enumerate.
      */
     public function nextPwmPowerSource()
     {   $resolve = YAPI::resolveFunction($this->_className, $this->_func);
         if($resolve->errorType != YAPI_SUCCESS) return null;
         $next_hwid = YAPI::getNextHardwareId($this->_className, $resolve->result);
         if($next_hwid == null) return null;
-        return yFindPwmPowerSource($next_hwid);
+        return self::FindPwmPowerSource($next_hwid);
     }
 
     /**
-     * Starts the enumeration of Voltage sources currently accessible.
-     * Use the method YPwmPowerSource.nextPwmPowerSource() to iterate on
-     * next Voltage sources.
+     * Starts the enumeration of PWM generator power sources currently accessible.
+     * Use the method YPwmPowerSource::nextPwmPowerSource() to iterate on
+     * next PWM generator power sources.
      *
-     * @return a pointer to a YPwmPowerSource object, corresponding to
-     *         the first source currently online, or a null pointer
+     * @return YPwmPowerSource : a pointer to a YPwmPowerSource object, corresponding to
+     *         the first PWM generator power source currently online, or a null pointer
      *         if there are none.
      */
     public static function FirstPwmPowerSource()
@@ -203,10 +217,10 @@ class YPwmPowerSource extends YFunction
 
 };
 
-//--- (PwmPowerSource functions)
+//--- (YPwmPowerSource functions)
 
 /**
- * Retrieves a voltage source for a given identifier.
+ * Retrieves a PWM generator power source for a given identifier.
  * The identifier can be specified using several formats:
  * <ul>
  * <li>FunctionLogicalName</li>
@@ -216,17 +230,22 @@ class YPwmPowerSource extends YFunction
  * <li>ModuleLogicalName.FunctionLogicalName</li>
  * </ul>
  *
- * This function does not require that the voltage source is online at the time
+ * This function does not require that the PWM generator power source is online at the time
  * it is invoked. The returned object is nevertheless valid.
- * Use the method YPwmPowerSource.isOnline() to test if the voltage source is
+ * Use the method isOnline() to test if the PWM generator power source is
  * indeed online at a given time. In case of ambiguity when looking for
- * a voltage source by logical name, no error is notified: the first instance
+ * a PWM generator power source by logical name, no error is notified: the first instance
  * found is returned. The search is performed first by hardware name,
  * then by logical name.
  *
- * @param func : a string that uniquely characterizes the voltage source
+ * If a call to this object's is_online() method returns FALSE although
+ * you are certain that the matching device is plugged, make sure that you did
+ * call registerHub() at application initialization time.
  *
- * @return a YPwmPowerSource object allowing you to drive the voltage source.
+ * @param string $func : a string that uniquely characterizes the PWM generator power source, for instance
+ *         YPWMTX01.pwmPowerSource.
+ *
+ * @return YPwmPowerSource : a YPwmPowerSource object allowing you to drive the PWM generator power source.
  */
 function yFindPwmPowerSource($func)
 {
@@ -234,12 +253,12 @@ function yFindPwmPowerSource($func)
 }
 
 /**
- * Starts the enumeration of Voltage sources currently accessible.
- * Use the method YPwmPowerSource.nextPwmPowerSource() to iterate on
- * next Voltage sources.
+ * Starts the enumeration of PWM generator power sources currently accessible.
+ * Use the method YPwmPowerSource::nextPwmPowerSource() to iterate on
+ * next PWM generator power sources.
  *
- * @return a pointer to a YPwmPowerSource object, corresponding to
- *         the first source currently online, or a null pointer
+ * @return YPwmPowerSource : a pointer to a YPwmPowerSource object, corresponding to
+ *         the first PWM generator power source currently online, or a null pointer
  *         if there are none.
  */
 function yFirstPwmPowerSource()
@@ -247,5 +266,5 @@ function yFirstPwmPowerSource()
     return YPwmPowerSource::FirstPwmPowerSource();
 }
 
-//--- (end of PwmPowerSource functions)
+//--- (end of YPwmPowerSource functions)
 ?>

@@ -1,11 +1,11 @@
 <?php
 /*********************************************************************
  *
- * $Id: yocto_latitude.php 23243 2016-02-23 14:13:12Z seb $
+ *  $Id: yocto_latitude.php 43580 2021-01-26 17:46:01Z mvuilleu $
  *
- * Implements YLatitude, the high-level API for Latitude functions
+ *  Implements YLatitude, the high-level API for Latitude functions
  *
- * - - - - - - - - - License information: - - - - - - - - - 
+ *  - - - - - - - - - License information: - - - - - - - - -
  *
  *  Copyright (C) 2011 and beyond by Yoctopuce Sarl, Switzerland.
  *
@@ -24,7 +24,7 @@
  *  obligations.
  *
  *  THE SOFTWARE AND DOCUMENTATION ARE PROVIDED 'AS IS' WITHOUT
- *  WARRANTY OF ANY KIND, EITHER EXPRESS OR IMPLIED, INCLUDING 
+ *  WARRANTY OF ANY KIND, EITHER EXPRESS OR IMPLIED, INCLUDING
  *  WITHOUT LIMITATION, ANY WARRANTY OF MERCHANTABILITY, FITNESS
  *  FOR A PARTICULAR PURPOSE, TITLE AND NON-INFRINGEMENT. IN NO
  *  EVENT SHALL LICENSOR BE LIABLE FOR ANY INCIDENTAL, SPECIAL,
@@ -42,15 +42,16 @@
 //--- (end of YLatitude return codes)
 //--- (YLatitude definitions)
 //--- (end of YLatitude definitions)
+    #--- (YLatitude yapiwrapper)
+   #--- (end of YLatitude yapiwrapper)
 
 //--- (YLatitude declaration)
 /**
- * YLatitude Class: Latitude function interface
+ * YLatitude Class: latitude sensor control interface, available for instance in the Yocto-GPS-V2
  *
- * The Yoctopuce class YLatitude allows you to read the latitude from Yoctopuce
- * geolocalization sensors. It inherits from the YSensor class the core functions to
- * read measurements, register callback functions, access the autonomous
- * datalogger.
+ * The YLatitude class allows you to read and configure Yoctopuce latitude sensors.
+ * It inherits from YSensor class the core functions to read measurements,
+ * to register callback functions, and to access the autonomous datalogger.
  */
 class YLatitude extends YSensor
 {
@@ -83,15 +84,20 @@ class YLatitude extends YSensor
      *
      * This function does not require that the latitude sensor is online at the time
      * it is invoked. The returned object is nevertheless valid.
-     * Use the method YLatitude.isOnline() to test if the latitude sensor is
+     * Use the method isOnline() to test if the latitude sensor is
      * indeed online at a given time. In case of ambiguity when looking for
      * a latitude sensor by logical name, no error is notified: the first instance
      * found is returned. The search is performed first by hardware name,
      * then by logical name.
      *
-     * @param func : a string that uniquely characterizes the latitude sensor
+     * If a call to this object's is_online() method returns FALSE although
+     * you are certain that the matching device is plugged, make sure that you did
+     * call registerHub() at application initialization time.
      *
-     * @return a YLatitude object allowing you to drive the latitude sensor.
+     * @param string $func : a string that uniquely characterizes the latitude sensor, for instance
+     *         YGNSSMK2.latitude.
+     *
+     * @return YLatitude : a YLatitude object allowing you to drive the latitude sensor.
      */
     public static function FindLatitude($func)
     {
@@ -106,8 +112,11 @@ class YLatitude extends YSensor
 
     /**
      * Continues the enumeration of latitude sensors started using yFirstLatitude().
+     * Caution: You can't make any assumption about the returned latitude sensors order.
+     * If you want to find a specific a latitude sensor, use Latitude.findLatitude()
+     * and a hardwareID or a logical name.
      *
-     * @return a pointer to a YLatitude object, corresponding to
+     * @return YLatitude : a pointer to a YLatitude object, corresponding to
      *         a latitude sensor currently online, or a null pointer
      *         if there are no more latitude sensors to enumerate.
      */
@@ -116,15 +125,15 @@ class YLatitude extends YSensor
         if($resolve->errorType != YAPI_SUCCESS) return null;
         $next_hwid = YAPI::getNextHardwareId($this->_className, $resolve->result);
         if($next_hwid == null) return null;
-        return yFindLatitude($next_hwid);
+        return self::FindLatitude($next_hwid);
     }
 
     /**
      * Starts the enumeration of latitude sensors currently accessible.
-     * Use the method YLatitude.nextLatitude() to iterate on
+     * Use the method YLatitude::nextLatitude() to iterate on
      * next latitude sensors.
      *
-     * @return a pointer to a YLatitude object, corresponding to
+     * @return YLatitude : a pointer to a YLatitude object, corresponding to
      *         the first latitude sensor currently online, or a null pointer
      *         if there are none.
      */
@@ -138,7 +147,7 @@ class YLatitude extends YSensor
 
 };
 
-//--- (Latitude functions)
+//--- (YLatitude functions)
 
 /**
  * Retrieves a latitude sensor for a given identifier.
@@ -153,15 +162,20 @@ class YLatitude extends YSensor
  *
  * This function does not require that the latitude sensor is online at the time
  * it is invoked. The returned object is nevertheless valid.
- * Use the method YLatitude.isOnline() to test if the latitude sensor is
+ * Use the method isOnline() to test if the latitude sensor is
  * indeed online at a given time. In case of ambiguity when looking for
  * a latitude sensor by logical name, no error is notified: the first instance
  * found is returned. The search is performed first by hardware name,
  * then by logical name.
  *
- * @param func : a string that uniquely characterizes the latitude sensor
+ * If a call to this object's is_online() method returns FALSE although
+ * you are certain that the matching device is plugged, make sure that you did
+ * call registerHub() at application initialization time.
  *
- * @return a YLatitude object allowing you to drive the latitude sensor.
+ * @param string $func : a string that uniquely characterizes the latitude sensor, for instance
+ *         YGNSSMK2.latitude.
+ *
+ * @return YLatitude : a YLatitude object allowing you to drive the latitude sensor.
  */
 function yFindLatitude($func)
 {
@@ -170,10 +184,10 @@ function yFindLatitude($func)
 
 /**
  * Starts the enumeration of latitude sensors currently accessible.
- * Use the method YLatitude.nextLatitude() to iterate on
+ * Use the method YLatitude::nextLatitude() to iterate on
  * next latitude sensors.
  *
- * @return a pointer to a YLatitude object, corresponding to
+ * @return YLatitude : a pointer to a YLatitude object, corresponding to
  *         the first latitude sensor currently online, or a null pointer
  *         if there are none.
  */
@@ -182,5 +196,5 @@ function yFirstLatitude()
     return YLatitude::FirstLatitude();
 }
 
-//--- (end of Latitude functions)
+//--- (end of YLatitude functions)
 ?>

@@ -1,36 +1,36 @@
 <?php
 /*********************************************************************
  *
- * $Id: yocto_wireless.php 21680 2015-10-02 13:42:44Z seb $
+ * $Id: yocto_wireless.php 43619 2021-01-29 09:14:45Z mvuilleu $
  *
  * Implements yFindWireless(), the high-level API for Wireless functions
  *
- * - - - - - - - - - License information: - - - - - - - - - 
+ * - - - - - - - - - License information: - - - - - - - - -
  *
  *  Copyright (C) 2011 and beyond by Yoctopuce Sarl, Switzerland.
  *
  *  Yoctopuce Sarl (hereafter Licensor) grants to you a perpetual
  *  non-exclusive license to use, modify, copy and integrate this
- *  file into your software for the sole purpose of interfacing 
- *  with Yoctopuce products. 
+ *  file into your software for the sole purpose of interfacing
+ *  with Yoctopuce products.
  *
- *  You may reproduce and distribute copies of this file in 
+ *  You may reproduce and distribute copies of this file in
  *  source or object form, as long as the sole purpose of this
- *  code is to interface with Yoctopuce products. You must retain 
+ *  code is to interface with Yoctopuce products. You must retain
  *  this notice in the distributed source file.
  *
  *  You should refer to Yoctopuce General Terms and Conditions
- *  for additional information regarding your rights and 
+ *  for additional information regarding your rights and
  *  obligations.
  *
  *  THE SOFTWARE AND DOCUMENTATION ARE PROVIDED "AS IS" WITHOUT
- *  WARRANTY OF ANY KIND, EITHER EXPRESS OR IMPLIED, INCLUDING 
- *  WITHOUT LIMITATION, ANY WARRANTY OF MERCHANTABILITY, FITNESS 
+ *  WARRANTY OF ANY KIND, EITHER EXPRESS OR IMPLIED, INCLUDING
+ *  WITHOUT LIMITATION, ANY WARRANTY OF MERCHANTABILITY, FITNESS
  *  FOR A PARTICULAR PURPOSE, TITLE AND NON-INFRINGEMENT. IN NO
  *  EVENT SHALL LICENSOR BE LIABLE FOR ANY INCIDENTAL, SPECIAL,
- *  INDIRECT OR CONSEQUENTIAL DAMAGES, LOST PROFITS OR LOST DATA, 
- *  COST OF PROCUREMENT OF SUBSTITUTE GOODS, TECHNOLOGY OR 
- *  SERVICES, ANY CLAIMS BY THIRD PARTIES (INCLUDING BUT NOT 
+ *  INDIRECT OR CONSEQUENTIAL DAMAGES, LOST PROFITS OR LOST DATA,
+ *  COST OF PROCUREMENT OF SUBSTITUTE GOODS, TECHNOLOGY OR
+ *  SERVICES, ANY CLAIMS BY THIRD PARTIES (INCLUDING BUT NOT
  *  LIMITED TO ANY DEFENSE THEREOF), ANY CLAIMS FOR INDEMNITY OR
  *  CONTRIBUTION, OR OTHER SIMILAR COSTS, WHETHER ASSERTED ON THE
  *  BASIS OF CONTRACT, TORT (INCLUDING NEGLIGENCE), BREACH OF
@@ -39,8 +39,8 @@
  *********************************************************************/
 
 
-//--- (generated code: return codes)
-//--- (end of generated code: return codes)
+//--- (generated code: YWireless return codes)
+//--- (end of generated code: YWireless return codes)
 //--- (generated code: YWireless definitions)
 if(!defined('Y_SECURITY_UNKNOWN'))           define('Y_SECURITY_UNKNOWN',          0);
 if(!defined('Y_SECURITY_OPEN'))              define('Y_SECURITY_OPEN',             1);
@@ -48,6 +48,11 @@ if(!defined('Y_SECURITY_WEP'))               define('Y_SECURITY_WEP',           
 if(!defined('Y_SECURITY_WPA'))               define('Y_SECURITY_WPA',              3);
 if(!defined('Y_SECURITY_WPA2'))              define('Y_SECURITY_WPA2',             4);
 if(!defined('Y_SECURITY_INVALID'))           define('Y_SECURITY_INVALID',          -1);
+if(!defined('Y_WLANSTATE_DOWN'))             define('Y_WLANSTATE_DOWN',            0);
+if(!defined('Y_WLANSTATE_SCANNING'))         define('Y_WLANSTATE_SCANNING',        1);
+if(!defined('Y_WLANSTATE_CONNECTED'))        define('Y_WLANSTATE_CONNECTED',       2);
+if(!defined('Y_WLANSTATE_REJECTED'))         define('Y_WLANSTATE_REJECTED',        3);
+if(!defined('Y_WLANSTATE_INVALID'))          define('Y_WLANSTATE_INVALID',         -1);
 if(!defined('Y_LINKQUALITY_INVALID'))        define('Y_LINKQUALITY_INVALID',       YAPI_INVALID_UINT);
 if(!defined('Y_SSID_INVALID'))               define('Y_SSID_INVALID',              YAPI_INVALID_STRING);
 if(!defined('Y_CHANNEL_INVALID'))            define('Y_CHANNEL_INVALID',           YAPI_INVALID_UINT);
@@ -60,9 +65,11 @@ if(!defined('Y_WLANCONFIG_INVALID'))         define('Y_WLANCONFIG_INVALID',     
 
 //--- (generated code: YWlanRecord declaration)
 /**
- * YWlanRecord Class: Description of a wireless network
+ * YWlanRecord Class: Wireless network description, returned by wireless.get_detectedWlans method
  *
- *
+ * YWlanRecord objects are used to describe a wireless network.
+ * These objects are  used in particular in conjunction with the
+ * YWireless class.
  */
 class YWlanRecord
 {
@@ -79,7 +86,7 @@ class YWlanRecord
     {
         //--- (generated code: YWlanRecord constructor)
         //--- (end of generated code: YWlanRecord constructor)
-        
+
         $loadval = json_decode($str_json, TRUE);
         $this->_ssid = $loadval['ssid'];
         $this->_channel = $loadval['channel'];
@@ -89,21 +96,42 @@ class YWlanRecord
 
     //--- (generated code: YWlanRecord implementation)
 
+    /**
+     * Returns the name of the wireless network (SSID).
+     *
+     * @return string : a string with the name of the wireless network (SSID).
+     */
     public function get_ssid()
     {
         return $this->_ssid;
     }
 
+    /**
+     * Returns the 802.11 b/g/n channel number used by this network.
+     *
+     * @return integer : an integer corresponding to the channel.
+     */
     public function get_channel()
     {
         return $this->_channel;
     }
 
+    /**
+     * Returns the security algorithm used by the wireless network.
+     * If the network implements to security, the value is "OPEN".
+     *
+     * @return string : a string with the security algorithm.
+     */
     public function get_security()
     {
         return $this->_sec;
     }
 
+    /**
+     * Returns the quality of the wireless network link, in per cents.
+     *
+     * @return integer : an integer between 0 and 100 corresponding to the signal quality.
+     */
     public function get_linkQuality()
     {
         return $this->_rssi;
@@ -114,10 +142,12 @@ class YWlanRecord
 
 //--- (generated code: YWireless declaration)
 /**
- * YWireless Class: Wireless function interface
+ * YWireless Class: wireless LAN interface control interface, available for instance in the
+ * YoctoHub-Wireless, the YoctoHub-Wireless-SR, the YoctoHub-Wireless-g or the YoctoHub-Wireless-n
  *
- * YWireless functions provides control over wireless network parameters
+ * The YWireless class provides control over wireless network parameters
  * and status for devices that are wireless-enabled.
+ * Note that TCP/IP parameters are configured separately, using class YNetwork.
  */
 class YWireless extends YFunction
 {
@@ -132,6 +162,11 @@ class YWireless extends YFunction
     const SECURITY_INVALID               = -1;
     const MESSAGE_INVALID                = YAPI_INVALID_STRING;
     const WLANCONFIG_INVALID             = YAPI_INVALID_STRING;
+    const WLANSTATE_DOWN                 = 0;
+    const WLANSTATE_SCANNING             = 1;
+    const WLANSTATE_CONNECTED            = 2;
+    const WLANSTATE_REJECTED             = 3;
+    const WLANSTATE_INVALID              = -1;
     //--- (end of generated code: YWireless declaration)
 
     //--- (generated code: YWireless attributes)
@@ -141,6 +176,7 @@ class YWireless extends YFunction
     protected $_security                 = Y_SECURITY_INVALID;           // WLANSec
     protected $_message                  = Y_MESSAGE_INVALID;            // YFSText
     protected $_wlanConfig               = Y_WLANCONFIG_INVALID;         // WLANConfig
+    protected $_wlanState                = Y_WLANSTATE_INVALID;          // WLANState
     //--- (end of generated code: YWireless attributes)
 
     function __construct($str_func)
@@ -175,6 +211,9 @@ class YWireless extends YFunction
         case 'wlanConfig':
             $this->_wlanConfig = $val;
             return 1;
+        case 'wlanState':
+            $this->_wlanState = intval($val);
+            return 1;
         }
         return parent::_parseAttr($name, $val);
     }
@@ -182,98 +221,111 @@ class YWireless extends YFunction
     /**
      * Returns the link quality, expressed in percent.
      *
-     * @return an integer corresponding to the link quality, expressed in percent
+     * @return integer : an integer corresponding to the link quality, expressed in percent
      *
-     * On failure, throws an exception or returns Y_LINKQUALITY_INVALID.
+     * On failure, throws an exception or returns YWireless::LINKQUALITY_INVALID.
      */
     public function get_linkQuality()
     {
+        // $res                    is a int;
         if ($this->_cacheExpiration <= YAPI::GetTickCount()) {
-            if ($this->load(YAPI::$defaultCacheValidity) != YAPI_SUCCESS) {
+            if ($this->load(YAPI::$_yapiContext->GetCacheValidity()) != YAPI_SUCCESS) {
                 return Y_LINKQUALITY_INVALID;
             }
         }
-        return $this->_linkQuality;
+        $res = $this->_linkQuality;
+        return $res;
     }
 
     /**
      * Returns the wireless network name (SSID).
      *
-     * @return a string corresponding to the wireless network name (SSID)
+     * @return string : a string corresponding to the wireless network name (SSID)
      *
-     * On failure, throws an exception or returns Y_SSID_INVALID.
+     * On failure, throws an exception or returns YWireless::SSID_INVALID.
      */
     public function get_ssid()
     {
+        // $res                    is a string;
         if ($this->_cacheExpiration <= YAPI::GetTickCount()) {
-            if ($this->load(YAPI::$defaultCacheValidity) != YAPI_SUCCESS) {
+            if ($this->load(YAPI::$_yapiContext->GetCacheValidity()) != YAPI_SUCCESS) {
                 return Y_SSID_INVALID;
             }
         }
-        return $this->_ssid;
+        $res = $this->_ssid;
+        return $res;
     }
 
     /**
      * Returns the 802.11 channel currently used, or 0 when the selected network has not been found.
      *
-     * @return an integer corresponding to the 802.11 channel currently used, or 0 when the selected
-     * network has not been found
+     * @return integer : an integer corresponding to the 802.11 channel currently used, or 0 when the
+     * selected network has not been found
      *
-     * On failure, throws an exception or returns Y_CHANNEL_INVALID.
+     * On failure, throws an exception or returns YWireless::CHANNEL_INVALID.
      */
     public function get_channel()
     {
+        // $res                    is a int;
         if ($this->_cacheExpiration <= YAPI::GetTickCount()) {
-            if ($this->load(YAPI::$defaultCacheValidity) != YAPI_SUCCESS) {
+            if ($this->load(YAPI::$_yapiContext->GetCacheValidity()) != YAPI_SUCCESS) {
                 return Y_CHANNEL_INVALID;
             }
         }
-        return $this->_channel;
+        $res = $this->_channel;
+        return $res;
     }
 
     /**
      * Returns the security algorithm used by the selected wireless network.
      *
-     * @return a value among Y_SECURITY_UNKNOWN, Y_SECURITY_OPEN, Y_SECURITY_WEP, Y_SECURITY_WPA and
-     * Y_SECURITY_WPA2 corresponding to the security algorithm used by the selected wireless network
+     * @return integer : a value among YWireless::SECURITY_UNKNOWN, YWireless::SECURITY_OPEN,
+     * YWireless::SECURITY_WEP, YWireless::SECURITY_WPA and YWireless::SECURITY_WPA2 corresponding to the
+     * security algorithm used by the selected wireless network
      *
-     * On failure, throws an exception or returns Y_SECURITY_INVALID.
+     * On failure, throws an exception or returns YWireless::SECURITY_INVALID.
      */
     public function get_security()
     {
+        // $res                    is a enumWLANSEC;
         if ($this->_cacheExpiration <= YAPI::GetTickCount()) {
-            if ($this->load(YAPI::$defaultCacheValidity) != YAPI_SUCCESS) {
+            if ($this->load(YAPI::$_yapiContext->GetCacheValidity()) != YAPI_SUCCESS) {
                 return Y_SECURITY_INVALID;
             }
         }
-        return $this->_security;
+        $res = $this->_security;
+        return $res;
     }
 
     /**
      * Returns the latest status message from the wireless interface.
      *
-     * @return a string corresponding to the latest status message from the wireless interface
+     * @return string : a string corresponding to the latest status message from the wireless interface
      *
-     * On failure, throws an exception or returns Y_MESSAGE_INVALID.
+     * On failure, throws an exception or returns YWireless::MESSAGE_INVALID.
      */
     public function get_message()
     {
+        // $res                    is a string;
         if ($this->_cacheExpiration <= YAPI::GetTickCount()) {
-            if ($this->load(YAPI::$defaultCacheValidity) != YAPI_SUCCESS) {
+            if ($this->load(YAPI::$_yapiContext->GetCacheValidity()) != YAPI_SUCCESS) {
                 return Y_MESSAGE_INVALID;
             }
         }
-        return $this->_message;
+        $res = $this->_message;
+        return $res;
     }
 
     public function get_wlanConfig()
     {
+        // $res                    is a string;
         if ($this->_cacheExpiration <= YAPI::GetTickCount()) {
-            if ($this->load(YAPI::$defaultCacheValidity) != YAPI_SUCCESS) {
+            if ($this->load(YAPI::$_yapiContext->GetCacheValidity()) != YAPI_SUCCESS) {
                 return Y_WLANCONFIG_INVALID;
             }
         }
-        return $this->_wlanConfig;
+        $res = $this->_wlanConfig;
+        return $res;
     }
 
     public function set_wlanConfig($newval)
@@ -283,7 +335,41 @@ class YWireless extends YFunction
     }
 
     /**
-     * Retrieves a wireless lan interface for a given identifier.
+     * Returns the current state of the wireless interface. The state YWireless::WLANSTATE_DOWN means that
+     * the network interface is
+     * not connected to a network. The state YWireless::WLANSTATE_SCANNING means that the network interface
+     * is scanning available
+     * frequencies. During this stage, the device is not reachable, and the network settings are not yet
+     * applied. The state
+     * YWireless::WLANSTATE_CONNECTED means that the network settings have been successfully applied ant
+     * that the device is reachable
+     * from the wireless network. If the device is configured to use ad-hoc or Soft AP mode, it means that
+     * the wireless network
+     * is up and that other devices can join the network. The state YWireless::WLANSTATE_REJECTED means
+     * that the network interface has
+     * not been able to join the requested network. The description of the error can be obtain with the
+     * get_message() method.
+     *
+     * @return integer : a value among YWireless::WLANSTATE_DOWN, YWireless::WLANSTATE_SCANNING,
+     * YWireless::WLANSTATE_CONNECTED and YWireless::WLANSTATE_REJECTED corresponding to the current state
+     * of the wireless interface
+     *
+     * On failure, throws an exception or returns YWireless::WLANSTATE_INVALID.
+     */
+    public function get_wlanState()
+    {
+        // $res                    is a enumWLANSTATE;
+        if ($this->_cacheExpiration <= YAPI::GetTickCount()) {
+            if ($this->load(YAPI::$_yapiContext->GetCacheValidity()) != YAPI_SUCCESS) {
+                return Y_WLANSTATE_INVALID;
+            }
+        }
+        $res = $this->_wlanState;
+        return $res;
+    }
+
+    /**
+     * Retrieves a wireless LAN interface for a given identifier.
      * The identifier can be specified using several formats:
      * <ul>
      * <li>FunctionLogicalName</li>
@@ -293,17 +379,22 @@ class YWireless extends YFunction
      * <li>ModuleLogicalName.FunctionLogicalName</li>
      * </ul>
      *
-     * This function does not require that the wireless lan interface is online at the time
+     * This function does not require that the wireless LAN interface is online at the time
      * it is invoked. The returned object is nevertheless valid.
-     * Use the method YWireless.isOnline() to test if the wireless lan interface is
+     * Use the method isOnline() to test if the wireless LAN interface is
      * indeed online at a given time. In case of ambiguity when looking for
-     * a wireless lan interface by logical name, no error is notified: the first instance
+     * a wireless LAN interface by logical name, no error is notified: the first instance
      * found is returned. The search is performed first by hardware name,
      * then by logical name.
      *
-     * @param func : a string that uniquely characterizes the wireless lan interface
+     * If a call to this object's is_online() method returns FALSE although
+     * you are certain that the matching device is plugged, make sure that you did
+     * call registerHub() at application initialization time.
      *
-     * @return a YWireless object allowing you to drive the wireless lan interface.
+     * @param string $func : a string that uniquely characterizes the wireless LAN interface, for instance
+     *         YHUBWLN1.wireless.
+     *
+     * @return YWireless : a YWireless object allowing you to drive the wireless LAN interface.
      */
     public static function FindWireless($func)
     {
@@ -317,14 +408,32 @@ class YWireless extends YFunction
     }
 
     /**
+     * Triggers a scan of the wireless frequency and builds the list of available networks.
+     * The scan forces a disconnection from the current network. At then end of the process, the
+     * the network interface attempts to reconnect to the previous network. During the scan, the wlanState
+     * switches to YWireless::WLANSTATE_DOWN, then to YWireless::WLANSTATE_SCANNING. When the scan is completed,
+     * get_wlanState() returns either YWireless::WLANSTATE_DOWN or YWireless::WLANSTATE_SCANNING. At this
+     * point, the list of detected network can be retrieved with the get_detectedWlans() method.
+     *
+     * On failure, throws an exception or returns a negative error code.
+     */
+    public function startWlanScan()
+    {
+        // $config                 is a str;
+        $config = $this->get_wlanConfig();
+        // a full scan is triggered when a config is applied
+        return $this->set_wlanConfig($config);
+    }
+
+    /**
      * Changes the configuration of the wireless lan interface to connect to an existing
      * access point (infrastructure mode).
      * Remember to call the saveToFlash() method and then to reboot the module to apply this setting.
      *
-     * @param ssid : the name of the network to connect to
-     * @param securityKey : the network key, as a character string
+     * @param string $ssid : the name of the network to connect to
+     * @param string $securityKey : the network key, as a character string
      *
-     * @return YAPI_SUCCESS when the call succeeds.
+     * @return integer : YAPI::SUCCESS when the call succeeds.
      *
      * On failure, throws an exception or returns a negative error code.
      */
@@ -335,8 +444,9 @@ class YWireless extends YFunction
 
     /**
      * Changes the configuration of the wireless lan interface to create an ad-hoc
-     * wireless network, without using an access point. On the YoctoHub-Wireless-g,
-     * it is best to use softAPNetworkInstead(), which emulates an access point
+     * wireless network, without using an access point. On the YoctoHub-Wireless-g
+     * and YoctoHub-Wireless-n,
+     * you should use softAPNetwork() instead, which emulates an access point
      * (Soft AP) which is more efficient and more widely supported than ad-hoc networks.
      *
      * When a security key is specified for an ad-hoc network, the network is protected
@@ -346,10 +456,10 @@ class YWireless extends YFunction
      * Remember to call the saveToFlash() method and then to reboot the module
      * to apply this setting.
      *
-     * @param ssid : the name of the network to connect to
-     * @param securityKey : the network key, as a character string
+     * @param string $ssid : the name of the network to connect to
+     * @param string $securityKey : the network key, as a character string
      *
-     * @return YAPI_SUCCESS when the call succeeds.
+     * @return integer : YAPI::SUCCESS when the call succeeds.
      *
      * On failure, throws an exception or returns a negative error code.
      */
@@ -361,18 +471,22 @@ class YWireless extends YFunction
     /**
      * Changes the configuration of the wireless lan interface to create a new wireless
      * network by emulating a WiFi access point (Soft AP). This function can only be
-     * used with the YoctoHub-Wireless-g.
+     * used with the YoctoHub-Wireless-g and the YoctoHub-Wireless-n.
      *
-     * When a security key is specified for a SoftAP network, the network is protected
-     * by a WEP40 key (5 characters or 10 hexadecimal digits) or WEP128 key (13 characters
-     * or 26 hexadecimal digits). It is recommended to use a well-randomized WEP128 key
-     * using 26 hexadecimal digits to maximize security.
+     * On the YoctoHub-Wireless-g, when a security key is specified for a SoftAP network,
+     * the network is protected by a WEP40 key (5 characters or 10 hexadecimal digits) or
+     * WEP128 key (13 characters or 26 hexadecimal digits). It is recommended to use a
+     * well-randomized WEP128 key using 26 hexadecimal digits to maximize security.
+     *
+     * On the YoctoHub-Wireless-n, when a security key is specified for a SoftAP network,
+     * the network will be protected by WPA2.
+     *
      * Remember to call the saveToFlash() method and then to reboot the module to apply this setting.
      *
-     * @param ssid : the name of the network to connect to
-     * @param securityKey : the network key, as a character string
+     * @param string $ssid : the name of the network to connect to
+     * @param string $securityKey : the network key, as a character string
      *
-     * @return YAPI_SUCCESS when the call succeeds.
+     * @return integer : YAPI::SUCCESS when the call succeeds.
      *
      * On failure, throws an exception or returns a negative error code.
      */
@@ -383,11 +497,11 @@ class YWireless extends YFunction
 
     /**
      * Returns a list of YWlanRecord objects that describe detected Wireless networks.
-     * This list is not updated when the module is already connected to an acces point (infrastructure mode).
-     * To force an update of this list, adhocNetwork() must be called to disconnect
-     * the module from the current network. The returned list must be unallocated by the caller.
+     * This list is not updated when the module is already connected to an access point (infrastructure mode).
+     * To force an update of this list, startWlanScan() must be called.
+     * Note that an languages without garbage collections, the returned list must be freed by the caller.
      *
-     * @return a list of YWlanRecord objects, containing the SSID, channel,
+     * @return YWlanRecord[] : a list of YWlanRecord objects, containing the SSID, channel,
      *         link quality and the type of security of the wireless network.
      *
      * On failure, throws an exception or returns an empty list.
@@ -397,7 +511,7 @@ class YWireless extends YFunction
         // $json                   is a bin;
         $wlanlist = Array();    // strArr;
         $res = Array();         // YWlanRecordArr;
-        // may throw an exception
+
         $json = $this->_download('wlan.json?by=name');
         $wlanlist = $this->_json_get_array($json);
         while(sizeof($res) > 0) { array_pop($res); };
@@ -428,28 +542,34 @@ class YWireless extends YFunction
     public function setWlanConfig($newval)
     { return $this->set_wlanConfig($newval); }
 
+    public function wlanState()
+    { return $this->get_wlanState(); }
+
     /**
-     * Continues the enumeration of wireless lan interfaces started using yFirstWireless().
+     * Continues the enumeration of wireless LAN interfaces started using yFirstWireless().
+     * Caution: You can't make any assumption about the returned wireless LAN interfaces order.
+     * If you want to find a specific a wireless LAN interface, use Wireless.findWireless()
+     * and a hardwareID or a logical name.
      *
-     * @return a pointer to a YWireless object, corresponding to
-     *         a wireless lan interface currently online, or a null pointer
-     *         if there are no more wireless lan interfaces to enumerate.
+     * @return YWireless : a pointer to a YWireless object, corresponding to
+     *         a wireless LAN interface currently online, or a null pointer
+     *         if there are no more wireless LAN interfaces to enumerate.
      */
     public function nextWireless()
     {   $resolve = YAPI::resolveFunction($this->_className, $this->_func);
         if($resolve->errorType != YAPI_SUCCESS) return null;
         $next_hwid = YAPI::getNextHardwareId($this->_className, $resolve->result);
         if($next_hwid == null) return null;
-        return yFindWireless($next_hwid);
+        return self::FindWireless($next_hwid);
     }
 
     /**
-     * Starts the enumeration of wireless lan interfaces currently accessible.
-     * Use the method YWireless.nextWireless() to iterate on
-     * next wireless lan interfaces.
+     * Starts the enumeration of wireless LAN interfaces currently accessible.
+     * Use the method YWireless::nextWireless() to iterate on
+     * next wireless LAN interfaces.
      *
-     * @return a pointer to a YWireless object, corresponding to
-     *         the first wireless lan interface currently online, or a null pointer
+     * @return YWireless : a pointer to a YWireless object, corresponding to
+     *         the first wireless LAN interface currently online, or a null pointer
      *         if there are none.
      */
     public static function FirstWireless()
@@ -461,10 +581,10 @@ class YWireless extends YFunction
     //--- (end of generated code: YWireless implementation)
 };
 
-//--- (generated code: Wireless functions)
+//--- (generated code: YWireless functions)
 
 /**
- * Retrieves a wireless lan interface for a given identifier.
+ * Retrieves a wireless LAN interface for a given identifier.
  * The identifier can be specified using several formats:
  * <ul>
  * <li>FunctionLogicalName</li>
@@ -474,17 +594,22 @@ class YWireless extends YFunction
  * <li>ModuleLogicalName.FunctionLogicalName</li>
  * </ul>
  *
- * This function does not require that the wireless lan interface is online at the time
+ * This function does not require that the wireless LAN interface is online at the time
  * it is invoked. The returned object is nevertheless valid.
- * Use the method YWireless.isOnline() to test if the wireless lan interface is
+ * Use the method isOnline() to test if the wireless LAN interface is
  * indeed online at a given time. In case of ambiguity when looking for
- * a wireless lan interface by logical name, no error is notified: the first instance
+ * a wireless LAN interface by logical name, no error is notified: the first instance
  * found is returned. The search is performed first by hardware name,
  * then by logical name.
  *
- * @param func : a string that uniquely characterizes the wireless lan interface
+ * If a call to this object's is_online() method returns FALSE although
+ * you are certain that the matching device is plugged, make sure that you did
+ * call registerHub() at application initialization time.
  *
- * @return a YWireless object allowing you to drive the wireless lan interface.
+ * @param string $func : a string that uniquely characterizes the wireless LAN interface, for instance
+ *         YHUBWLN1.wireless.
+ *
+ * @return YWireless : a YWireless object allowing you to drive the wireless LAN interface.
  */
 function yFindWireless($func)
 {
@@ -492,12 +617,12 @@ function yFindWireless($func)
 }
 
 /**
- * Starts the enumeration of wireless lan interfaces currently accessible.
- * Use the method YWireless.nextWireless() to iterate on
- * next wireless lan interfaces.
+ * Starts the enumeration of wireless LAN interfaces currently accessible.
+ * Use the method YWireless::nextWireless() to iterate on
+ * next wireless LAN interfaces.
  *
- * @return a pointer to a YWireless object, corresponding to
- *         the first wireless lan interface currently online, or a null pointer
+ * @return YWireless : a pointer to a YWireless object, corresponding to
+ *         the first wireless LAN interface currently online, or a null pointer
  *         if there are none.
  */
 function yFirstWireless()
@@ -505,5 +630,5 @@ function yFirstWireless()
     return YWireless::FirstWireless();
 }
 
-//--- (end of generated code: Wireless functions)
+//--- (end of generated code: YWireless functions)
 ?>

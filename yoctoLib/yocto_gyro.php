@@ -1,36 +1,36 @@
 <?php
 /*********************************************************************
  *
- * $Id: yocto_gyro.php 22360 2015-12-15 13:31:40Z seb $
+ * $Id: yocto_gyro.php 43580 2021-01-26 17:46:01Z mvuilleu $
  *
  * Implements YGyro, the high-level API for Gyro functions
  *
- * - - - - - - - - - License information: - - - - - - - - - 
+ * - - - - - - - - - License information: - - - - - - - - -
  *
  *  Copyright (C) 2011 and beyond by Yoctopuce Sarl, Switzerland.
  *
  *  Yoctopuce Sarl (hereafter Licensor) grants to you a perpetual
  *  non-exclusive license to use, modify, copy and integrate this
- *  file into your software for the sole purpose of interfacing 
- *  with Yoctopuce products. 
+ *  file into your software for the sole purpose of interfacing
+ *  with Yoctopuce products.
  *
- *  You may reproduce and distribute copies of this file in 
+ *  You may reproduce and distribute copies of this file in
  *  source or object form, as long as the sole purpose of this
- *  code is to interface with Yoctopuce products. You must retain 
+ *  code is to interface with Yoctopuce products. You must retain
  *  this notice in the distributed source file.
  *
  *  You should refer to Yoctopuce General Terms and Conditions
- *  for additional information regarding your rights and 
+ *  for additional information regarding your rights and
  *  obligations.
  *
  *  THE SOFTWARE AND DOCUMENTATION ARE PROVIDED 'AS IS' WITHOUT
- *  WARRANTY OF ANY KIND, EITHER EXPRESS OR IMPLIED, INCLUDING 
- *  WITHOUT LIMITATION, ANY WARRANTY OF MERCHANTABILITY, FITNESS 
+ *  WARRANTY OF ANY KIND, EITHER EXPRESS OR IMPLIED, INCLUDING
+ *  WITHOUT LIMITATION, ANY WARRANTY OF MERCHANTABILITY, FITNESS
  *  FOR A PARTICULAR PURPOSE, TITLE AND NON-INFRINGEMENT. IN NO
  *  EVENT SHALL LICENSOR BE LIABLE FOR ANY INCIDENTAL, SPECIAL,
- *  INDIRECT OR CONSEQUENTIAL DAMAGES, LOST PROFITS OR LOST DATA, 
- *  COST OF PROCUREMENT OF SUBSTITUTE GOODS, TECHNOLOGY OR 
- *  SERVICES, ANY CLAIMS BY THIRD PARTIES (INCLUDING BUT NOT 
+ *  INDIRECT OR CONSEQUENTIAL DAMAGES, LOST PROFITS OR LOST DATA,
+ *  COST OF PROCUREMENT OF SUBSTITUTE GOODS, TECHNOLOGY OR
+ *  SERVICES, ANY CLAIMS BY THIRD PARTIES (INCLUDING BUT NOT
  *  LIMITED TO ANY DEFENSE THEREOF), ANY CLAIMS FOR INDEMNITY OR
  *  CONTRIBUTION, OR OTHER SIMILAR COSTS, WHETHER ASSERTED ON THE
  *  BASIS OF CONTRACT, TORT (INCLUDING NEGLIGENCE), BREACH OF
@@ -45,11 +45,14 @@
 
 //--- (generated code: YQt declaration)
 /**
- * YQt Class: Quaternion interface
+ * YQt Class: Base interface to access quaternion components, available for instance in the Yocto-3D-V2
  *
- * The Yoctopuce API YQt class provides direct access to the Yocto3D attitude estimation
- * using a quaternion. It is usually not needed to use the YQt class directly, as the
- * YGyro class provides a more convenient higher-level interface.
+ * The YQt class provides direct access to the 3D attitude estimation
+ * provided by Yoctopuce inertial sensors. The four instances of YQt
+ * provide direct access to the individual quaternion components representing the
+ * orientation. It is usually not needed to use the YQt class
+ * directly, as the YGyro class provides a more convenient higher-level
+ * interface.
  */
 class YQt extends YSensor
 {
@@ -82,15 +85,20 @@ class YQt extends YSensor
      *
      * This function does not require that the quaternion component is online at the time
      * it is invoked. The returned object is nevertheless valid.
-     * Use the method YQt.isOnline() to test if the quaternion component is
+     * Use the method isOnline() to test if the quaternion component is
      * indeed online at a given time. In case of ambiguity when looking for
      * a quaternion component by logical name, no error is notified: the first instance
      * found is returned. The search is performed first by hardware name,
      * then by logical name.
      *
-     * @param func : a string that uniquely characterizes the quaternion component
+     * If a call to this object's is_online() method returns FALSE although
+     * you are certain that the matching device is plugged, make sure that you did
+     * call registerHub() at application initialization time.
      *
-     * @return a YQt object allowing you to drive the quaternion component.
+     * @param string $func : a string that uniquely characterizes the quaternion component, for instance
+     *         Y3DMK002.qt1.
+     *
+     * @return YQt : a YQt object allowing you to drive the quaternion component.
      */
     public static function FindQt($func)
     {
@@ -105,8 +113,11 @@ class YQt extends YSensor
 
     /**
      * Continues the enumeration of quaternion components started using yFirstQt().
+     * Caution: You can't make any assumption about the returned quaternion components order.
+     * If you want to find a specific a quaternion component, use Qt.findQt()
+     * and a hardwareID or a logical name.
      *
-     * @return a pointer to a YQt object, corresponding to
+     * @return YQt : a pointer to a YQt object, corresponding to
      *         a quaternion component currently online, or a null pointer
      *         if there are no more quaternion components to enumerate.
      */
@@ -115,15 +126,15 @@ class YQt extends YSensor
         if($resolve->errorType != YAPI_SUCCESS) return null;
         $next_hwid = YAPI::getNextHardwareId($this->_className, $resolve->result);
         if($next_hwid == null) return null;
-        return yFindQt($next_hwid);
+        return self::FindQt($next_hwid);
     }
 
     /**
      * Starts the enumeration of quaternion components currently accessible.
-     * Use the method YQt.nextQt() to iterate on
+     * Use the method YQt::nextQt() to iterate on
      * next quaternion components.
      *
-     * @return a pointer to a YQt object, corresponding to
+     * @return YQt : a pointer to a YQt object, corresponding to
      *         the first quaternion component currently online, or a null pointer
      *         if there are none.
      */
@@ -137,7 +148,7 @@ class YQt extends YSensor
 
 };
 
-//--- (generated code: Qt functions)
+//--- (generated code: YQt functions)
 
 /**
  * Retrieves a quaternion component for a given identifier.
@@ -152,15 +163,20 @@ class YQt extends YSensor
  *
  * This function does not require that the quaternion component is online at the time
  * it is invoked. The returned object is nevertheless valid.
- * Use the method YQt.isOnline() to test if the quaternion component is
+ * Use the method isOnline() to test if the quaternion component is
  * indeed online at a given time. In case of ambiguity when looking for
  * a quaternion component by logical name, no error is notified: the first instance
  * found is returned. The search is performed first by hardware name,
  * then by logical name.
  *
- * @param func : a string that uniquely characterizes the quaternion component
+ * If a call to this object's is_online() method returns FALSE although
+ * you are certain that the matching device is plugged, make sure that you did
+ * call registerHub() at application initialization time.
  *
- * @return a YQt object allowing you to drive the quaternion component.
+ * @param string $func : a string that uniquely characterizes the quaternion component, for instance
+ *         Y3DMK002.qt1.
+ *
+ * @return YQt : a YQt object allowing you to drive the quaternion component.
  */
 function yFindQt($func)
 {
@@ -169,10 +185,10 @@ function yFindQt($func)
 
 /**
  * Starts the enumeration of quaternion components currently accessible.
- * Use the method YQt.nextQt() to iterate on
+ * Use the method YQt::nextQt() to iterate on
  * next quaternion components.
  *
- * @return a pointer to a YQt object, corresponding to
+ * @return YQt : a pointer to a YQt object, corresponding to
  *         the first quaternion component currently online, or a null pointer
  *         if there are none.
  */
@@ -181,11 +197,12 @@ function yFirstQt()
     return YQt::FirstQt();
 }
 
-//--- (end of generated code: Qt functions)
+//--- (end of generated code: YQt functions)
 
 //--- (generated code: YGyro return codes)
 //--- (end of generated code: YGyro return codes)
 //--- (generated code: YGyro definitions)
+if(!defined('Y_BANDWIDTH_INVALID'))          define('Y_BANDWIDTH_INVALID',         YAPI_INVALID_UINT);
 if(!defined('Y_XVALUE_INVALID'))             define('Y_XVALUE_INVALID',            YAPI_INVALID_DOUBLE);
 if(!defined('Y_YVALUE_INVALID'))             define('Y_YVALUE_INVALID',            YAPI_INVALID_DOUBLE);
 if(!defined('Y_ZVALUE_INVALID'))             define('Y_ZVALUE_INVALID',            YAPI_INVALID_DOUBLE);
@@ -201,26 +218,25 @@ function yInternalGyroCallback($YQt_obj, $str_value)
 
 //--- (generated code: YGyro declaration)
 /**
- * YGyro Class: Gyroscope function interface
+ * YGyro Class: gyroscope control interface, available for instance in the Yocto-3D-V2
  *
- * The YSensor class is the parent class for all Yoctopuce sensors. It can be
- * used to read the current value and unit of any sensor, read the min/max
- * value, configure autonomous recording frequency and access recorded data.
- * It also provide a function to register a callback invoked each time the
- * observed value changes, or at a predefined interval. Using this class rather
- * than a specific subclass makes it possible to create generic applications
- * that work with any Yoctopuce sensor, even those that do not yet exist.
- * Note: The YAnButton class is the only analog input which does not inherit
- * from YSensor.
+ * The YGyro class allows you to read and configure Yoctopuce gyroscopes.
+ * It inherits from YSensor class the core functions to read measurements,
+ * to register callback functions, and to access the autonomous datalogger.
+ * This class adds the possibility to access x, y and z components of the rotation
+ * vector separately, as well as the possibility to deal with quaternion-based
+ * orientation estimates.
  */
 class YGyro extends YSensor
 {
+    const BANDWIDTH_INVALID              = YAPI_INVALID_UINT;
     const XVALUE_INVALID                 = YAPI_INVALID_DOUBLE;
     const YVALUE_INVALID                 = YAPI_INVALID_DOUBLE;
     const ZVALUE_INVALID                 = YAPI_INVALID_DOUBLE;
     //--- (end of generated code: YGyro declaration)
 
     //--- (generated code: YGyro attributes)
+    protected $_bandwidth                = Y_BANDWIDTH_INVALID;          // UInt31
     protected $_xValue                   = Y_XVALUE_INVALID;             // MeasureVal
     protected $_yValue                   = Y_YVALUE_INVALID;             // MeasureVal
     protected $_zValue                   = Y_ZVALUE_INVALID;             // MeasureVal
@@ -255,6 +271,9 @@ class YGyro extends YSensor
     function _parseAttr($name, $val)
     {
         switch($name) {
+        case 'bandwidth':
+            $this->_bandwidth = intval($val);
+            return 1;
         case 'xValue':
             $this->_xValue = round($val * 1000.0 / 65536.0) / 1000.0;
             return 1;
@@ -269,57 +288,100 @@ class YGyro extends YSensor
     }
 
     /**
+     * Returns the measure update frequency, measured in Hz.
+     *
+     * @return integer : an integer corresponding to the measure update frequency, measured in Hz
+     *
+     * On failure, throws an exception or returns YGyro::BANDWIDTH_INVALID.
+     */
+    public function get_bandwidth()
+    {
+        // $res                    is a int;
+        if ($this->_cacheExpiration <= YAPI::GetTickCount()) {
+            if ($this->load(YAPI::$_yapiContext->GetCacheValidity()) != YAPI_SUCCESS) {
+                return Y_BANDWIDTH_INVALID;
+            }
+        }
+        $res = $this->_bandwidth;
+        return $res;
+    }
+
+    /**
+     * Changes the measure update frequency, measured in Hz. When the
+     * frequency is lower, the device performs averaging.
+     * Remember to call the saveToFlash()
+     * method of the module if the modification must be kept.
+     *
+     * @param integer $newval : an integer corresponding to the measure update frequency, measured in Hz
+     *
+     * @return integer : YAPI::SUCCESS if the call succeeds.
+     *
+     * On failure, throws an exception or returns a negative error code.
+     */
+    public function set_bandwidth($newval)
+    {
+        $rest_val = strval($newval);
+        return $this->_setAttr("bandwidth",$rest_val);
+    }
+
+    /**
      * Returns the angular velocity around the X axis of the device, as a floating point number.
      *
-     * @return a floating point number corresponding to the angular velocity around the X axis of the
-     * device, as a floating point number
+     * @return double : a floating point number corresponding to the angular velocity around the X axis of
+     * the device, as a floating point number
      *
-     * On failure, throws an exception or returns Y_XVALUE_INVALID.
+     * On failure, throws an exception or returns YGyro::XVALUE_INVALID.
      */
     public function get_xValue()
     {
+        // $res                    is a double;
         if ($this->_cacheExpiration <= YAPI::GetTickCount()) {
-            if ($this->load(YAPI::$defaultCacheValidity) != YAPI_SUCCESS) {
+            if ($this->load(YAPI::$_yapiContext->GetCacheValidity()) != YAPI_SUCCESS) {
                 return Y_XVALUE_INVALID;
             }
         }
-        return $this->_xValue;
+        $res = $this->_xValue;
+        return $res;
     }
 
     /**
      * Returns the angular velocity around the Y axis of the device, as a floating point number.
      *
-     * @return a floating point number corresponding to the angular velocity around the Y axis of the
-     * device, as a floating point number
+     * @return double : a floating point number corresponding to the angular velocity around the Y axis of
+     * the device, as a floating point number
      *
-     * On failure, throws an exception or returns Y_YVALUE_INVALID.
+     * On failure, throws an exception or returns YGyro::YVALUE_INVALID.
      */
     public function get_yValue()
     {
+        // $res                    is a double;
         if ($this->_cacheExpiration <= YAPI::GetTickCount()) {
-            if ($this->load(YAPI::$defaultCacheValidity) != YAPI_SUCCESS) {
+            if ($this->load(YAPI::$_yapiContext->GetCacheValidity()) != YAPI_SUCCESS) {
                 return Y_YVALUE_INVALID;
             }
         }
-        return $this->_yValue;
+        $res = $this->_yValue;
+        return $res;
     }
 
     /**
      * Returns the angular velocity around the Z axis of the device, as a floating point number.
      *
-     * @return a floating point number corresponding to the angular velocity around the Z axis of the
-     * device, as a floating point number
+     * @return double : a floating point number corresponding to the angular velocity around the Z axis of
+     * the device, as a floating point number
      *
-     * On failure, throws an exception or returns Y_ZVALUE_INVALID.
+     * On failure, throws an exception or returns YGyro::ZVALUE_INVALID.
      */
     public function get_zValue()
     {
+        // $res                    is a double;
         if ($this->_cacheExpiration <= YAPI::GetTickCount()) {
-            if ($this->load(YAPI::$defaultCacheValidity) != YAPI_SUCCESS) {
+            if ($this->load(YAPI::$_yapiContext->GetCacheValidity()) != YAPI_SUCCESS) {
                 return Y_ZVALUE_INVALID;
             }
         }
-        return $this->_zValue;
+        $res = $this->_zValue;
+        return $res;
     }
 
     /**
@@ -335,15 +397,20 @@ class YGyro extends YSensor
      *
      * This function does not require that the gyroscope is online at the time
      * it is invoked. The returned object is nevertheless valid.
-     * Use the method YGyro.isOnline() to test if the gyroscope is
+     * Use the method isOnline() to test if the gyroscope is
      * indeed online at a given time. In case of ambiguity when looking for
      * a gyroscope by logical name, no error is notified: the first instance
      * found is returned. The search is performed first by hardware name,
      * then by logical name.
      *
-     * @param func : a string that uniquely characterizes the gyroscope
+     * If a call to this object's is_online() method returns FALSE although
+     * you are certain that the matching device is plugged, make sure that you did
+     * call registerHub() at application initialization time.
      *
-     * @return a YGyro object allowing you to drive the gyroscope.
+     * @param string $func : a string that uniquely characterizes the gyroscope, for instance
+     *         Y3DMK002.gyro.
+     *
+     * @return YGyro : a YGyro object allowing you to drive the gyroscope.
      */
     public static function FindGyro($func)
     {
@@ -401,7 +468,7 @@ class YGyro extends YSensor
         // $sqz                    is a float;
         // $norm                   is a float;
         // $delta                  is a float;
-        // may throw an exception
+
         if ($this->_loadQuaternion() != YAPI_SUCCESS) {
             return YAPI_DEVICE_NOT_FOUND;
         }
@@ -413,12 +480,14 @@ class YGyro extends YSensor
             $norm = $sqx + $sqy + $sqz + $sqw;
             $delta = $this->_y * $this->_w - $this->_x * $this->_z;
             if ($delta > 0.499 * $norm) {
+                // singularity at north pole
                 $this->_pitch = 90.0;
-                $this->_head  = round(2.0 * 1800.0/3.141592653589793238463 * atan2($this->_x,$this->_w)) / 10.0;
+                $this->_head  = round(2.0 * 1800.0/3.141592653589793238463 * atan2($this->_x,-$this->_w)) / 10.0;
             } else {
                 if ($delta < -0.499 * $norm) {
+                    // singularity at south pole
                     $this->_pitch = -90.0;
-                    $this->_head  = round(-2.0 * 1800.0/3.141592653589793238463 * atan2($this->_x,$this->_w)) / 10.0;
+                    $this->_head  = round(-2.0 * 1800.0/3.141592653589793238463 * atan2($this->_x,-$this->_w)) / 10.0;
                 } else {
                     $this->_roll  = round(1800.0/3.141592653589793238463 * atan2(2.0 * ($this->_w * $this->_x + $this->_y * $this->_z),$sqw - $sqx - $sqy + $sqz)) / 10.0;
                     $this->_pitch = round(1800.0/3.141592653589793238463 * asin(2.0 * $delta / $norm)) / 10.0;
@@ -438,7 +507,7 @@ class YGyro extends YSensor
      * of the device X, Y or Z physical directions using methods of
      * the class YRefFrame.
      *
-     * @return a floating-point number corresponding to roll angle
+     * @return double : a floating-point number corresponding to roll angle
      *         in degrees, between -180 and +180.
      */
     public function get_roll()
@@ -455,7 +524,7 @@ class YGyro extends YSensor
      * of the device X, Y or Z physical directions using methods of
      * the class YRefFrame.
      *
-     * @return a floating-point number corresponding to pitch angle
+     * @return double : a floating-point number corresponding to pitch angle
      *         in degrees, between -90 and +90.
      */
     public function get_pitch()
@@ -472,7 +541,7 @@ class YGyro extends YSensor
      * of the device X, Y or Z physical directions using methods of
      * the class YRefFrame.
      *
-     * @return a floating-point number corresponding to heading
+     * @return double : a floating-point number corresponding to heading
      *         in degrees, between 0 and 360.
      */
     public function get_heading()
@@ -487,7 +556,7 @@ class YGyro extends YSensor
      * integration of gyroscopic measures combined with acceleration and
      * magnetic field measurements.
      *
-     * @return a floating-point number corresponding to the w
+     * @return double : a floating-point number corresponding to the w
      *         component of the quaternion.
      */
     public function get_quaternionW()
@@ -503,7 +572,7 @@ class YGyro extends YSensor
      * magnetic field measurements. The x component is
      * mostly correlated with rotations on the roll axis.
      *
-     * @return a floating-point number corresponding to the x
+     * @return double : a floating-point number corresponding to the x
      *         component of the quaternion.
      */
     public function get_quaternionX()
@@ -519,7 +588,7 @@ class YGyro extends YSensor
      * magnetic field measurements. The y component is
      * mostly correlated with rotations on the pitch axis.
      *
-     * @return a floating-point number corresponding to the y
+     * @return double : a floating-point number corresponding to the y
      *         component of the quaternion.
      */
     public function get_quaternionY()
@@ -535,7 +604,7 @@ class YGyro extends YSensor
      * magnetic field measurements. The x component is
      * mostly correlated with changes of heading.
      *
-     * @return a floating-point number corresponding to the z
+     * @return double : a floating-point number corresponding to the z
      *         component of the quaternion.
      */
     public function get_quaternionZ()
@@ -552,7 +621,7 @@ class YGyro extends YSensor
      * For good responsiveness, remember to call one of these two functions periodically.
      * To unregister a callback, pass a null pointer as argument.
      *
-     * @param callback : the callback function to invoke, or a null pointer.
+     * @param function $callback : the callback function to invoke, or a null pointer.
      *         The callback function should take five arguments:
      *         the YGyro object of the turning device, and the floating
      *         point values of the four components w, x, y and z
@@ -593,7 +662,7 @@ class YGyro extends YSensor
      * For good responsiveness, remember to call one of these two functions periodically.
      * To unregister a callback, pass a null pointer as argument.
      *
-     * @param callback : the callback function to invoke, or a null pointer.
+     * @param function $callback : the callback function to invoke, or a null pointer.
      *         The callback function should take four arguments:
      *         the YGyro object of the turning device, and the floating
      *         point values of the three angles roll, pitch and heading
@@ -656,6 +725,12 @@ class YGyro extends YSensor
         return 0;
     }
 
+    public function bandwidth()
+    { return $this->get_bandwidth(); }
+
+    public function setBandwidth($newval)
+    { return $this->set_bandwidth($newval); }
+
     public function xValue()
     { return $this->get_xValue(); }
 
@@ -667,8 +742,11 @@ class YGyro extends YSensor
 
     /**
      * Continues the enumeration of gyroscopes started using yFirstGyro().
+     * Caution: You can't make any assumption about the returned gyroscopes order.
+     * If you want to find a specific a gyroscope, use Gyro.findGyro()
+     * and a hardwareID or a logical name.
      *
-     * @return a pointer to a YGyro object, corresponding to
+     * @return YGyro : a pointer to a YGyro object, corresponding to
      *         a gyroscope currently online, or a null pointer
      *         if there are no more gyroscopes to enumerate.
      */
@@ -677,15 +755,15 @@ class YGyro extends YSensor
         if($resolve->errorType != YAPI_SUCCESS) return null;
         $next_hwid = YAPI::getNextHardwareId($this->_className, $resolve->result);
         if($next_hwid == null) return null;
-        return yFindGyro($next_hwid);
+        return self::FindGyro($next_hwid);
     }
 
     /**
      * Starts the enumeration of gyroscopes currently accessible.
-     * Use the method YGyro.nextGyro() to iterate on
+     * Use the method YGyro::nextGyro() to iterate on
      * next gyroscopes.
      *
-     * @return a pointer to a YGyro object, corresponding to
+     * @return YGyro : a pointer to a YGyro object, corresponding to
      *         the first gyro currently online, or a null pointer
      *         if there are none.
      */
@@ -699,7 +777,7 @@ class YGyro extends YSensor
 
 };
 
-//--- (generated code: Gyro functions)
+//--- (generated code: YGyro functions)
 
 /**
  * Retrieves a gyroscope for a given identifier.
@@ -714,15 +792,20 @@ class YGyro extends YSensor
  *
  * This function does not require that the gyroscope is online at the time
  * it is invoked. The returned object is nevertheless valid.
- * Use the method YGyro.isOnline() to test if the gyroscope is
+ * Use the method isOnline() to test if the gyroscope is
  * indeed online at a given time. In case of ambiguity when looking for
  * a gyroscope by logical name, no error is notified: the first instance
  * found is returned. The search is performed first by hardware name,
  * then by logical name.
  *
- * @param func : a string that uniquely characterizes the gyroscope
+ * If a call to this object's is_online() method returns FALSE although
+ * you are certain that the matching device is plugged, make sure that you did
+ * call registerHub() at application initialization time.
  *
- * @return a YGyro object allowing you to drive the gyroscope.
+ * @param string $func : a string that uniquely characterizes the gyroscope, for instance
+ *         Y3DMK002.gyro.
+ *
+ * @return YGyro : a YGyro object allowing you to drive the gyroscope.
  */
 function yFindGyro($func)
 {
@@ -731,10 +814,10 @@ function yFindGyro($func)
 
 /**
  * Starts the enumeration of gyroscopes currently accessible.
- * Use the method YGyro.nextGyro() to iterate on
+ * Use the method YGyro::nextGyro() to iterate on
  * next gyroscopes.
  *
- * @return a pointer to a YGyro object, corresponding to
+ * @return YGyro : a pointer to a YGyro object, corresponding to
  *         the first gyro currently online, or a null pointer
  *         if there are none.
  */
@@ -743,5 +826,5 @@ function yFirstGyro()
     return YGyro::FirstGyro();
 }
 
-//--- (end of generated code: Gyro functions)
+//--- (end of generated code: YGyro functions)
 ?>

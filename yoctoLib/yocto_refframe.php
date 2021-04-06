@@ -1,11 +1,11 @@
 <?php
 /*********************************************************************
  *
- * $Id: yocto_refframe.php 23243 2016-02-23 14:13:12Z seb $
+ *  $Id: yocto_refframe.php 43619 2021-01-29 09:14:45Z mvuilleu $
  *
- * Implements YRefFrame, the high-level API for RefFrame functions
+ *  Implements YRefFrame, the high-level API for RefFrame functions
  *
- * - - - - - - - - - License information: - - - - - - - - - 
+ *  - - - - - - - - - License information: - - - - - - - - -
  *
  *  Copyright (C) 2011 and beyond by Yoctopuce Sarl, Switzerland.
  *
@@ -24,7 +24,7 @@
  *  obligations.
  *
  *  THE SOFTWARE AND DOCUMENTATION ARE PROVIDED 'AS IS' WITHOUT
- *  WARRANTY OF ANY KIND, EITHER EXPRESS OR IMPLIED, INCLUDING 
+ *  WARRANTY OF ANY KIND, EITHER EXPRESS OR IMPLIED, INCLUDING
  *  WITHOUT LIMITATION, ANY WARRANTY OF MERCHANTABILITY, FITNESS
  *  FOR A PARTICULAR PURPOSE, TITLE AND NON-INFRINGEMENT. IN NO
  *  EVENT SHALL LICENSOR BE LIABLE FOR ANY INCIDENTAL, SPECIAL,
@@ -41,29 +41,43 @@
 //--- (YRefFrame return codes)
 //--- (end of YRefFrame return codes)
 //--- (YRefFrame definitions)
+if(!defined('Y_FUSIONMODE_NDOF'))            define('Y_FUSIONMODE_NDOF',           0);
+if(!defined('Y_FUSIONMODE_NDOF_FMC_OFF'))    define('Y_FUSIONMODE_NDOF_FMC_OFF',   1);
+if(!defined('Y_FUSIONMODE_M4G'))             define('Y_FUSIONMODE_M4G',            2);
+if(!defined('Y_FUSIONMODE_COMPASS'))         define('Y_FUSIONMODE_COMPASS',        3);
+if(!defined('Y_FUSIONMODE_IMU'))             define('Y_FUSIONMODE_IMU',            4);
+if(!defined('Y_FUSIONMODE_INCLIN_90DEG_1G8')) define('Y_FUSIONMODE_INCLIN_90DEG_1G8', 5);
+if(!defined('Y_FUSIONMODE_INCLIN_90DEG_3G6')) define('Y_FUSIONMODE_INCLIN_90DEG_3G6', 6);
+if(!defined('Y_FUSIONMODE_INCLIN_10DEG'))    define('Y_FUSIONMODE_INCLIN_10DEG',   7);
+if(!defined('Y_FUSIONMODE_INVALID'))         define('Y_FUSIONMODE_INVALID',        -1);
 if(!defined('Y_MOUNTPOSITION_BOTTOM'))       define('Y_MOUNTPOSITION_BOTTOM',      0);
 if(!defined('Y_MOUNTPOSITION_TOP'))          define('Y_MOUNTPOSITION_TOP',         1);
 if(!defined('Y_MOUNTPOSITION_FRONT'))        define('Y_MOUNTPOSITION_FRONT',       2);
 if(!defined('Y_MOUNTPOSITION_REAR'))         define('Y_MOUNTPOSITION_REAR',        3);
 if(!defined('Y_MOUNTPOSITION_RIGHT'))        define('Y_MOUNTPOSITION_RIGHT',       4);
 if(!defined('Y_MOUNTPOSITION_LEFT'))         define('Y_MOUNTPOSITION_LEFT',        5);
+if(!defined('Y_MOUNTPOSITION_INVALID'))      define('Y_MOUNTPOSITION_INVALID',     6);
 if(!defined('Y_MOUNTORIENTATION_TWELVE'))    define('Y_MOUNTORIENTATION_TWELVE',   0);
 if(!defined('Y_MOUNTORIENTATION_THREE'))     define('Y_MOUNTORIENTATION_THREE',    1);
 if(!defined('Y_MOUNTORIENTATION_SIX'))       define('Y_MOUNTORIENTATION_SIX',      2);
 if(!defined('Y_MOUNTORIENTATION_NINE'))      define('Y_MOUNTORIENTATION_NINE',     3);
+if(!defined('Y_MOUNTORIENTATION_INVALID'))   define('Y_MOUNTORIENTATION_INVALID',  4);
 if(!defined('Y_MOUNTPOS_INVALID'))           define('Y_MOUNTPOS_INVALID',          YAPI_INVALID_UINT);
 if(!defined('Y_BEARING_INVALID'))            define('Y_BEARING_INVALID',           YAPI_INVALID_DOUBLE);
 if(!defined('Y_CALIBRATIONPARAM_INVALID'))   define('Y_CALIBRATIONPARAM_INVALID',  YAPI_INVALID_STRING);
 //--- (end of YRefFrame definitions)
+    #--- (YRefFrame yapiwrapper)
+   #--- (end of YRefFrame yapiwrapper)
 
 //--- (YRefFrame declaration)
 /**
- * YRefFrame Class: Reference frame configuration
+ * YRefFrame Class: 3D reference frame configuration interface, available for instance in the
+ * Yocto-3D-V2 or the Yocto-Inclinometer
  *
- * This class is used to setup the base orientation of the Yocto-3D, so that
- * the orientation functions, relative to the earth surface plane, use
- * the proper reference frame. The class also implements a tridimensional
- * sensor calibration process, which can compensate for local variations
+ * The YRefFrame class is used to setup the base orientation of the Yoctopuce inertial
+ * sensors. Thanks to this, orientation functions relative to the earth surface plane
+ * can use the proper reference frame. For some devices, the class also implements a
+ * tridimensional sensor calibration process, which can compensate for local variations
  * of standard gravity and improve the precision of the tilt sensors.
  */
 class YRefFrame extends YFunction
@@ -71,22 +85,35 @@ class YRefFrame extends YFunction
     const MOUNTPOS_INVALID               = YAPI_INVALID_UINT;
     const BEARING_INVALID                = YAPI_INVALID_DOUBLE;
     const CALIBRATIONPARAM_INVALID       = YAPI_INVALID_STRING;
+    const FUSIONMODE_NDOF                = 0;
+    const FUSIONMODE_NDOF_FMC_OFF        = 1;
+    const FUSIONMODE_M4G                 = 2;
+    const FUSIONMODE_COMPASS             = 3;
+    const FUSIONMODE_IMU                 = 4;
+    const FUSIONMODE_INCLIN_90DEG_1G8    = 5;
+    const FUSIONMODE_INCLIN_90DEG_3G6    = 6;
+    const FUSIONMODE_INCLIN_10DEG        = 7;
+    const FUSIONMODE_INVALID             = -1;
     const MOUNTPOSITION_BOTTOM           = 0;
     const MOUNTPOSITION_TOP              = 1;
     const MOUNTPOSITION_FRONT            = 2;
     const MOUNTPOSITION_REAR             = 3;
     const MOUNTPOSITION_RIGHT            = 4;
     const MOUNTPOSITION_LEFT             = 5;
+    const MOUNTPOSITION_INVALID          = 6;
     const MOUNTORIENTATION_TWELVE        = 0;
     const MOUNTORIENTATION_THREE         = 1;
     const MOUNTORIENTATION_SIX           = 2;
     const MOUNTORIENTATION_NINE          = 3;
+    const MOUNTORIENTATION_INVALID       = 4;
     //--- (end of YRefFrame declaration)
 
     //--- (YRefFrame attributes)
     protected $_mountPos                 = Y_MOUNTPOS_INVALID;           // UInt31
     protected $_bearing                  = Y_BEARING_INVALID;            // MeasureVal
     protected $_calibrationParam         = Y_CALIBRATIONPARAM_INVALID;   // CalibParams
+    protected $_fusionMode               = Y_FUSIONMODE_INVALID;         // FusionModeTypeAll
+    protected $_calibV2                  = 0;                            // bool
     protected $_calibStage               = 0;                            // int
     protected $_calibStageHint           = "";                           // str
     protected $_calibStageProgress       = 0;                            // int
@@ -132,18 +159,23 @@ class YRefFrame extends YFunction
         case 'calibrationParam':
             $this->_calibrationParam = $val;
             return 1;
+        case 'fusionMode':
+            $this->_fusionMode = intval($val);
+            return 1;
         }
         return parent::_parseAttr($name, $val);
     }
 
     public function get_mountPos()
     {
+        // $res                    is a int;
         if ($this->_cacheExpiration <= YAPI::GetTickCount()) {
-            if ($this->load(YAPI::$defaultCacheValidity) != YAPI_SUCCESS) {
+            if ($this->load(YAPI::$_yapiContext->GetCacheValidity()) != YAPI_SUCCESS) {
                 return Y_MOUNTPOS_INVALID;
             }
         }
-        return $this->_mountPos;
+        $res = $this->_mountPos;
+        return $res;
     }
 
     public function set_mountPos($newval)
@@ -168,9 +200,9 @@ class YRefFrame extends YFunction
      * Remember to call the saveToFlash()
      * method of the module if the modification must be kept.
      *
-     * @param newval : a floating point number corresponding to the reference bearing used by the compass
+     * @param double $newval : a floating point number corresponding to the reference bearing used by the compass
      *
-     * @return YAPI_SUCCESS if the call succeeds.
+     * @return integer : YAPI::SUCCESS if the call succeeds.
      *
      * On failure, throws an exception or returns a negative error code.
      */
@@ -185,34 +217,79 @@ class YRefFrame extends YFunction
      * indicated by the compass is the difference between the measured magnetic
      * heading and the reference bearing indicated here.
      *
-     * @return a floating point number corresponding to the reference bearing used by the compass
+     * @return double : a floating point number corresponding to the reference bearing used by the compass
      *
-     * On failure, throws an exception or returns Y_BEARING_INVALID.
+     * On failure, throws an exception or returns YRefFrame::BEARING_INVALID.
      */
     public function get_bearing()
     {
+        // $res                    is a double;
         if ($this->_cacheExpiration <= YAPI::GetTickCount()) {
-            if ($this->load(YAPI::$defaultCacheValidity) != YAPI_SUCCESS) {
+            if ($this->load(YAPI::$_yapiContext->GetCacheValidity()) != YAPI_SUCCESS) {
                 return Y_BEARING_INVALID;
             }
         }
-        return $this->_bearing;
+        $res = $this->_bearing;
+        return $res;
     }
 
     public function get_calibrationParam()
     {
+        // $res                    is a string;
         if ($this->_cacheExpiration <= YAPI::GetTickCount()) {
-            if ($this->load(YAPI::$defaultCacheValidity) != YAPI_SUCCESS) {
+            if ($this->load(YAPI::$_yapiContext->GetCacheValidity()) != YAPI_SUCCESS) {
                 return Y_CALIBRATIONPARAM_INVALID;
             }
         }
-        return $this->_calibrationParam;
+        $res = $this->_calibrationParam;
+        return $res;
     }
 
     public function set_calibrationParam($newval)
     {
         $rest_val = $newval;
         return $this->_setAttr("calibrationParam",$rest_val);
+    }
+
+    /**
+     * Returns the sensor fusion mode. Note that available sensor fusion modes depend on the sensor type.
+     *
+     * @return integer : a value among YRefFrame::FUSIONMODE_NDOF, YRefFrame::FUSIONMODE_NDOF_FMC_OFF,
+     * YRefFrame::FUSIONMODE_M4G, YRefFrame::FUSIONMODE_COMPASS, YRefFrame::FUSIONMODE_IMU,
+     * YRefFrame::FUSIONMODE_INCLIN_90DEG_1G8, YRefFrame::FUSIONMODE_INCLIN_90DEG_3G6 and
+     * YRefFrame::FUSIONMODE_INCLIN_10DEG corresponding to the sensor fusion mode
+     *
+     * On failure, throws an exception or returns YRefFrame::FUSIONMODE_INVALID.
+     */
+    public function get_fusionMode()
+    {
+        // $res                    is a enumFUSIONMODETYPEALL;
+        if ($this->_cacheExpiration <= YAPI::GetTickCount()) {
+            if ($this->load(YAPI::$_yapiContext->GetCacheValidity()) != YAPI_SUCCESS) {
+                return Y_FUSIONMODE_INVALID;
+            }
+        }
+        $res = $this->_fusionMode;
+        return $res;
+    }
+
+    /**
+     * Change the sensor fusion mode. Note that available sensor fusion modes depend on the sensor type.
+     * Remember to call the matching module saveToFlash() method to save the setting permanently.
+     *
+     * @param integer $newval : a value among YRefFrame::FUSIONMODE_NDOF,
+     * YRefFrame::FUSIONMODE_NDOF_FMC_OFF, YRefFrame::FUSIONMODE_M4G, YRefFrame::FUSIONMODE_COMPASS,
+     * YRefFrame::FUSIONMODE_IMU, YRefFrame::FUSIONMODE_INCLIN_90DEG_1G8,
+     * YRefFrame::FUSIONMODE_INCLIN_90DEG_3G6 and YRefFrame::FUSIONMODE_INCLIN_10DEG
+     *
+     * @return integer : YAPI::SUCCESS if the call succeeds.
+     *
+     * On failure, throws an exception or returns a negative error code.
+     */
+    public function set_fusionMode($newval)
+    {
+        $rest_val = strval($newval);
+        return $this->_setAttr("fusionMode",$rest_val);
     }
 
     /**
@@ -228,15 +305,20 @@ class YRefFrame extends YFunction
      *
      * This function does not require that the reference frame is online at the time
      * it is invoked. The returned object is nevertheless valid.
-     * Use the method YRefFrame.isOnline() to test if the reference frame is
+     * Use the method isOnline() to test if the reference frame is
      * indeed online at a given time. In case of ambiguity when looking for
      * a reference frame by logical name, no error is notified: the first instance
      * found is returned. The search is performed first by hardware name,
      * then by logical name.
      *
-     * @param func : a string that uniquely characterizes the reference frame
+     * If a call to this object's is_online() method returns FALSE although
+     * you are certain that the matching device is plugged, make sure that you did
+     * call registerHub() at application initialization time.
      *
-     * @return a YRefFrame object allowing you to drive the reference frame.
+     * @param string $func : a string that uniquely characterizes the reference frame, for instance
+     *         Y3DMK002.refFrame.
+     *
+     * @return YRefFrame : a YRefFrame object allowing you to drive the reference frame.
      */
     public static function FindRefFrame($func)
     {
@@ -254,18 +336,21 @@ class YRefFrame extends YFunction
      * in order to define the reference frame for the compass and the
      * pitch/roll tilt sensors.
      *
-     * @return a value among the Y_MOUNTPOSITION enumeration
-     *         (Y_MOUNTPOSITION_BOTTOM,   Y_MOUNTPOSITION_TOP,
-     *         Y_MOUNTPOSITION_FRONT,    Y_MOUNTPOSITION_RIGHT,
-     *         Y_MOUNTPOSITION_REAR,     Y_MOUNTPOSITION_LEFT),
+     * @return MOUNTPOSITION : a value among the YRefFrame::MOUNTPOSITION enumeration
+     *         (YRefFrame::MOUNTPOSITION_BOTTOM,  YRefFrame::MOUNTPOSITION_TOP,
+     *         YRefFrame::MOUNTPOSITION_FRONT,    YRefFrame::MOUNTPOSITION_RIGHT,
+     *         YRefFrame::MOUNTPOSITION_REAR,     YRefFrame::MOUNTPOSITION_LEFT),
      *         corresponding to the installation in a box, on one of the six faces.
      *
-     * On failure, throws an exception or returns a negative error code.
+     * On failure, throws an exception or returns YRefFrame::MOUNTPOSITION_INVALID.
      */
     public function get_mountPosition()
     {
         // $position               is a int;
         $position = $this->get_mountPos();
+        if ($position < 0) {
+            return Y_MOUNTPOSITION_INVALID;
+        }
         return (($position) >> (2));
     }
 
@@ -274,20 +359,23 @@ class YRefFrame extends YFunction
      * in order to define the reference frame for the compass and the
      * pitch/roll tilt sensors.
      *
-     * @return a value among the enumeration Y_MOUNTORIENTATION
-     *         (Y_MOUNTORIENTATION_TWELVE, Y_MOUNTORIENTATION_THREE,
-     *         Y_MOUNTORIENTATION_SIX,     Y_MOUNTORIENTATION_NINE)
+     * @return MOUNTORIENTATION : a value among the enumeration YRefFrame::MOUNTORIENTATION
+     *         (YRefFrame::MOUNTORIENTATION_TWELVE, YRefFrame::MOUNTORIENTATION_THREE,
+     *         YRefFrame::MOUNTORIENTATION_SIX,     YRefFrame::MOUNTORIENTATION_NINE)
      *         corresponding to the orientation of the "X" arrow on the device,
      *         as on a clock dial seen from an observer in the center of the box.
      *         On the bottom face, the 12H orientation points to the front, while
      *         on the top face, the 12H orientation points to the rear.
      *
-     * On failure, throws an exception or returns a negative error code.
+     * On failure, throws an exception or returns YRefFrame::MOUNTORIENTATION_INVALID.
      */
     public function get_mountOrientation()
     {
         // $position               is a int;
         $position = $this->get_mountPos();
+        if ($position < 0) {
+            return Y_MOUNTORIENTATION_INVALID;
+        }
         return (($position) & (3));
     }
 
@@ -298,14 +386,14 @@ class YRefFrame extends YFunction
      * and horizontally, you must select its reference orientation (parallel to
      * the earth surface) so that the measures are made relative to this position.
      *
-     * @param position : a value among the Y_MOUNTPOSITION enumeration
-     *         (Y_MOUNTPOSITION_BOTTOM,   Y_MOUNTPOSITION_TOP,
-     *         Y_MOUNTPOSITION_FRONT,    Y_MOUNTPOSITION_RIGHT,
-     *         Y_MOUNTPOSITION_REAR,     Y_MOUNTPOSITION_LEFT),
+     * @param MOUNTPOSITION $position : a value among the YRefFrame::MOUNTPOSITION enumeration
+     *         (YRefFrame::MOUNTPOSITION_BOTTOM,  YRefFrame::MOUNTPOSITION_TOP,
+     *         YRefFrame::MOUNTPOSITION_FRONT,    YRefFrame::MOUNTPOSITION_RIGHT,
+     *         YRefFrame::MOUNTPOSITION_REAR,     YRefFrame::MOUNTPOSITION_LEFT),
      *         corresponding to the installation in a box, on one of the six faces.
-     * @param orientation : a value among the enumeration Y_MOUNTORIENTATION
-     *         (Y_MOUNTORIENTATION_TWELVE, Y_MOUNTORIENTATION_THREE,
-     *         Y_MOUNTORIENTATION_SIX,     Y_MOUNTORIENTATION_NINE)
+     * @param MOUNTORIENTATION $orientation : a value among the enumeration YRefFrame::MOUNTORIENTATION
+     *         (YRefFrame::MOUNTORIENTATION_TWELVE, YRefFrame::MOUNTORIENTATION_THREE,
+     *         YRefFrame::MOUNTORIENTATION_SIX,     YRefFrame::MOUNTORIENTATION_NINE)
      *         corresponding to the orientation of the "X" arrow on the device,
      *         as on a clock dial seen from an observer in the center of the box.
      *         On the bottom face, the 12H orientation points to the front, while
@@ -321,6 +409,67 @@ class YRefFrame extends YFunction
         // $mixedPos               is a int;
         $mixedPos = (($position) << (2)) + $orientation;
         return $this->set_mountPos($mixedPos);
+    }
+
+    /**
+     * Returns the 3D sensor calibration state (Yocto-3D-V2 only). This function returns
+     * an integer representing the calibration state of the 3 inertial sensors of
+     * the BNO055 chip, found in the Yocto-3D-V2. Hundredths show the calibration state
+     * of the accelerometer, tenths show the calibration state of the magnetometer while
+     * units show the calibration state of the gyroscope. For each sensor, the value 0
+     * means no calibration and the value 3 means full calibration.
+     *
+     * @return integer : an integer representing the calibration state of Yocto-3D-V2:
+     *         333 when fully calibrated, 0 when not calibrated at all.
+     *
+     * On failure, throws an exception or returns a negative error code.
+     * For the Yocto-3D (V1), this function always return -3 (unsupported function).
+     */
+    public function get_calibrationState()
+    {
+        // $calibParam             is a str;
+        $iCalib = Array();      // intArr;
+        // $caltyp                 is a int;
+        // $res                    is a int;
+
+        $calibParam = $this->get_calibrationParam();
+        $iCalib = YAPI::_decodeFloats($calibParam);
+        $caltyp = intVal(($iCalib[0]) / (1000));
+        if ($caltyp != 33) {
+            return YAPI_NOT_SUPPORTED;
+        }
+        $res = intVal(($iCalib[1]) / (1000));
+        return $res;
+    }
+
+    /**
+     * Returns estimated quality of the orientation (Yocto-3D-V2 only). This function returns
+     * an integer between 0 and 3 representing the degree of confidence of the position
+     * estimate. When the value is 3, the estimation is reliable. Below 3, one should
+     * expect sudden corrections, in particular for heading (compass function).
+     * The most frequent causes for values below 3 are magnetic interferences, and
+     * accelerations or rotations beyond the sensor range.
+     *
+     * @return integer : an integer between 0 and 3 (3 when the measure is reliable)
+     *
+     * On failure, throws an exception or returns a negative error code.
+     * For the Yocto-3D (V1), this function always return -3 (unsupported function).
+     */
+    public function get_measureQuality()
+    {
+        // $calibParam             is a str;
+        $iCalib = Array();      // intArr;
+        // $caltyp                 is a int;
+        // $res                    is a int;
+
+        $calibParam = $this->get_calibrationParam();
+        $iCalib = YAPI::_decodeFloats($calibParam);
+        $caltyp = intVal(($iCalib[0]) / (1000));
+        if ($caltyp != 33) {
+            return YAPI_NOT_SUPPORTED;
+        }
+        $res = intVal(($iCalib[2]) / (1000));
+        return $res;
     }
 
     public function _calibSort($start,$stopidx)
@@ -375,7 +524,7 @@ class YRefFrame extends YFunction
      * The calibration procedure is completed when the method
      * get_3DCalibrationProgress returns 100. At this point,
      * the computed calibration parameters can be applied using method
-     * save3DCalibration. The calibration process can be canceled
+     * save3DCalibration. The calibration process can be cancelled
      * at any time using method cancel3DCalibration.
      *
      * On failure, throws an exception or returns a negative error code.
@@ -389,6 +538,7 @@ class YRefFrame extends YFunction
             $this->cancel3DCalibration();
         }
         $this->_calibSavedParams = $this->get_calibrationParam();
+        $this->_calibV2 = (intVal($this->_calibSavedParams) == 33);
         $this->set_calibrationParam('0');
         $this->_calibCount = 50;
         $this->_calibStage = 1;
@@ -417,6 +567,14 @@ class YRefFrame extends YFunction
      */
     public function more3DCalibration()
     {
+        if ($this->_calibV2) {
+            return $this->more3DCalibrationV2();
+        }
+        return $this->more3DCalibrationV1();
+    }
+
+    public function more3DCalibrationV1()
+    {
         // $currTick               is a int;
         // $jsonData               is a bin;
         // $xVal                   is a float;
@@ -437,7 +595,7 @@ class YRefFrame extends YFunction
         if ($this->_calibProgress == 100) {
             return YAPI_SUCCESS;
         }
-        // make sure we leave at least 160ms between samples
+        // make sure we leave at least 160 ms between samples
         $currTick =  ((YAPI::GetTickCount()) & (0x7FFFFFFF));
         if ((($currTick - $this->_calibPrevTick) & (0x7FFFFFFF)) < 160) {
             return YAPI_SUCCESS;
@@ -501,6 +659,7 @@ class YRefFrame extends YFunction
         }
         // Discard measures that are not in the proper orientation
         if ($this->_calibStageProgress == 0) {
+            // New stage, check that $this orientation is not yet done
             $idx = 0;
             $err = 0;
             while ($idx + 1 < $this->_calibStage) {
@@ -515,6 +674,7 @@ class YRefFrame extends YFunction
             }
             $this->_calibOrient[] = $orient;
         } else {
+            // Make sure device is not turned before stage is completed
             if ($orient != $this->_calibOrient[$this->_calibStage-1]) {
                 $this->_calibStageHint = 'Not yet done, please move back to the previous face';
                 return YAPI_SUCCESS;
@@ -615,11 +775,70 @@ class YRefFrame extends YFunction
         return YAPI_SUCCESS;
     }
 
+    public function more3DCalibrationV2()
+    {
+        // $currTick               is a int;
+        // $calibParam             is a bin;
+        $iCalib = Array();      // intArr;
+        // $cal3                   is a int;
+        // $calAcc                 is a int;
+        // $calMag                 is a int;
+        // $calGyr                 is a int;
+        // make sure calibration has been started
+        if ($this->_calibStage == 0) {
+            return YAPI_INVALID_ARGUMENT;
+        }
+        if ($this->_calibProgress == 100) {
+            return YAPI_SUCCESS;
+        }
+        // make sure we don't start before previous calibration is cleared
+        if ($this->_calibStage == 1) {
+            $currTick = ((YAPI::GetTickCount()) & (0x7FFFFFFF));
+            $currTick = (($currTick - $this->_calibPrevTick) & (0x7FFFFFFF));
+            if ($currTick < 1600) {
+                $this->_calibStageHint = 'Set down the device on a steady horizontal surface';
+                $this->_calibStageProgress = intVal(($currTick) / (40));
+                $this->_calibProgress = 1;
+                return YAPI_SUCCESS;
+            }
+        }
+
+        $calibParam = $this->_download('api/refFrame/calibrationParam.txt');
+        $iCalib = YAPI::_decodeFloats($calibParam);
+        $cal3 = intVal(($iCalib[1]) / (1000));
+        $calAcc = intVal(($cal3) / (100));
+        $calMag = intVal(($cal3) / (10)) - 10*$calAcc;
+        $calGyr = (($cal3) % (10));
+        if ($calGyr < 3) {
+            $this->_calibStageHint = 'Set down the device on a steady horizontal surface';
+            $this->_calibStageProgress = 40 + $calGyr*20;
+            $this->_calibProgress = 4 + $calGyr*2;
+        } else {
+            $this->_calibStage = 2;
+            if ($calMag < 3) {
+                $this->_calibStageHint = 'Slowly draw \'8\' shapes along the 3 axis';
+                $this->_calibStageProgress = 1 + $calMag*33;
+                $this->_calibProgress = 10 + $calMag*5;
+            } else {
+                $this->_calibStage = 3;
+                if ($calAcc < 3) {
+                    $this->_calibStageHint = 'Slowly turn the device, stopping at each 90 degrees';
+                    $this->_calibStageProgress = 1 + $calAcc*33;
+                    $this->_calibProgress = 25 + $calAcc*25;
+                } else {
+                    $this->_calibStageProgress = 99;
+                    $this->_calibProgress = 100;
+                }
+            }
+        }
+        return YAPI_SUCCESS;
+    }
+
     /**
      * Returns instructions to proceed to the tridimensional calibration initiated with
      * method start3DCalibration.
      *
-     * @return a character string.
+     * @return string : a character string.
      */
     public function get_3DCalibrationHint()
     {
@@ -630,7 +849,7 @@ class YRefFrame extends YFunction
      * Returns the global process indicator for the tridimensional calibration
      * initiated with method start3DCalibration.
      *
-     * @return an integer between 0 (not started) and 100 (stage completed).
+     * @return integer : an integer between 0 (not started) and 100 (stage completed).
      */
     public function get_3DCalibrationProgress()
     {
@@ -641,7 +860,7 @@ class YRefFrame extends YFunction
      * Returns index of the current stage of the calibration
      * initiated with method start3DCalibration.
      *
-     * @return an integer, growing each time a calibration stage is completed.
+     * @return integer : an integer, growing each time a calibration stage is completed.
      */
     public function get_3DCalibrationStage()
     {
@@ -652,7 +871,7 @@ class YRefFrame extends YFunction
      * Returns the process indicator for the current stage of the calibration
      * initiated with method start3DCalibration.
      *
-     * @return an integer between 0 (not started) and 100 (stage completed).
+     * @return integer : an integer between 0 (not started) and 100 (stage completed).
      */
     public function get_3DCalibrationStageProgress()
     {
@@ -663,7 +882,7 @@ class YRefFrame extends YFunction
      * Returns the latest log message from the calibration process.
      * When no new message is available, returns an empty string.
      *
-     * @return a character string.
+     * @return string : a character string.
      */
     public function get_3DCalibrationLogMsg()
     {
@@ -681,6 +900,14 @@ class YRefFrame extends YFunction
      * On failure, throws an exception or returns a negative error code.
      */
     public function save3DCalibration()
+    {
+        if ($this->_calibV2) {
+            return $this->save3DCalibrationV2();
+        }
+        return $this->save3DCalibrationV1();
+    }
+
+    public function save3DCalibrationV1()
     {
         // $shiftX                 is a int;
         // $shiftY                 is a int;
@@ -746,6 +973,11 @@ class YRefFrame extends YFunction
         return $this->set_calibrationParam($newcalib);
     }
 
+    public function save3DCalibrationV2()
+    {
+        return $this->set_calibrationParam('5,5,5,5,5,5');
+    }
+
     /**
      * Aborts the sensors tridimensional calibration process et restores normal settings.
      *
@@ -756,7 +988,7 @@ class YRefFrame extends YFunction
         if ($this->_calibStage == 0) {
             return YAPI_SUCCESS;
         }
-        // may throw an exception
+
         $this->_calibStage = 0;
         return $this->set_calibrationParam($this->_calibSavedParams);
     }
@@ -779,10 +1011,19 @@ class YRefFrame extends YFunction
     public function setCalibrationParam($newval)
     { return $this->set_calibrationParam($newval); }
 
+    public function fusionMode()
+    { return $this->get_fusionMode(); }
+
+    public function setFusionMode($newval)
+    { return $this->set_fusionMode($newval); }
+
     /**
      * Continues the enumeration of reference frames started using yFirstRefFrame().
+     * Caution: You can't make any assumption about the returned reference frames order.
+     * If you want to find a specific a reference frame, use RefFrame.findRefFrame()
+     * and a hardwareID or a logical name.
      *
-     * @return a pointer to a YRefFrame object, corresponding to
+     * @return YRefFrame : a pointer to a YRefFrame object, corresponding to
      *         a reference frame currently online, or a null pointer
      *         if there are no more reference frames to enumerate.
      */
@@ -791,15 +1032,15 @@ class YRefFrame extends YFunction
         if($resolve->errorType != YAPI_SUCCESS) return null;
         $next_hwid = YAPI::getNextHardwareId($this->_className, $resolve->result);
         if($next_hwid == null) return null;
-        return yFindRefFrame($next_hwid);
+        return self::FindRefFrame($next_hwid);
     }
 
     /**
      * Starts the enumeration of reference frames currently accessible.
-     * Use the method YRefFrame.nextRefFrame() to iterate on
+     * Use the method YRefFrame::nextRefFrame() to iterate on
      * next reference frames.
      *
-     * @return a pointer to a YRefFrame object, corresponding to
+     * @return YRefFrame : a pointer to a YRefFrame object, corresponding to
      *         the first reference frame currently online, or a null pointer
      *         if there are none.
      */
@@ -813,7 +1054,7 @@ class YRefFrame extends YFunction
 
 };
 
-//--- (RefFrame functions)
+//--- (YRefFrame functions)
 
 /**
  * Retrieves a reference frame for a given identifier.
@@ -828,15 +1069,20 @@ class YRefFrame extends YFunction
  *
  * This function does not require that the reference frame is online at the time
  * it is invoked. The returned object is nevertheless valid.
- * Use the method YRefFrame.isOnline() to test if the reference frame is
+ * Use the method isOnline() to test if the reference frame is
  * indeed online at a given time. In case of ambiguity when looking for
  * a reference frame by logical name, no error is notified: the first instance
  * found is returned. The search is performed first by hardware name,
  * then by logical name.
  *
- * @param func : a string that uniquely characterizes the reference frame
+ * If a call to this object's is_online() method returns FALSE although
+ * you are certain that the matching device is plugged, make sure that you did
+ * call registerHub() at application initialization time.
  *
- * @return a YRefFrame object allowing you to drive the reference frame.
+ * @param string $func : a string that uniquely characterizes the reference frame, for instance
+ *         Y3DMK002.refFrame.
+ *
+ * @return YRefFrame : a YRefFrame object allowing you to drive the reference frame.
  */
 function yFindRefFrame($func)
 {
@@ -845,10 +1091,10 @@ function yFindRefFrame($func)
 
 /**
  * Starts the enumeration of reference frames currently accessible.
- * Use the method YRefFrame.nextRefFrame() to iterate on
+ * Use the method YRefFrame::nextRefFrame() to iterate on
  * next reference frames.
  *
- * @return a pointer to a YRefFrame object, corresponding to
+ * @return YRefFrame : a pointer to a YRefFrame object, corresponding to
  *         the first reference frame currently online, or a null pointer
  *         if there are none.
  */
@@ -857,5 +1103,5 @@ function yFirstRefFrame()
     return YRefFrame::FirstRefFrame();
 }
 
-//--- (end of RefFrame functions)
+//--- (end of YRefFrame functions)
 ?>

@@ -1,11 +1,11 @@
 <?php
 /*********************************************************************
  *
- * $Id: yocto_pressure.php 23243 2016-02-23 14:13:12Z seb $
+ *  $Id: yocto_pressure.php 43580 2021-01-26 17:46:01Z mvuilleu $
  *
- * Implements YPressure, the high-level API for Pressure functions
+ *  Implements YPressure, the high-level API for Pressure functions
  *
- * - - - - - - - - - License information: - - - - - - - - - 
+ *  - - - - - - - - - License information: - - - - - - - - -
  *
  *  Copyright (C) 2011 and beyond by Yoctopuce Sarl, Switzerland.
  *
@@ -24,7 +24,7 @@
  *  obligations.
  *
  *  THE SOFTWARE AND DOCUMENTATION ARE PROVIDED 'AS IS' WITHOUT
- *  WARRANTY OF ANY KIND, EITHER EXPRESS OR IMPLIED, INCLUDING 
+ *  WARRANTY OF ANY KIND, EITHER EXPRESS OR IMPLIED, INCLUDING
  *  WITHOUT LIMITATION, ANY WARRANTY OF MERCHANTABILITY, FITNESS
  *  FOR A PARTICULAR PURPOSE, TITLE AND NON-INFRINGEMENT. IN NO
  *  EVENT SHALL LICENSOR BE LIABLE FOR ANY INCIDENTAL, SPECIAL,
@@ -42,14 +42,17 @@
 //--- (end of YPressure return codes)
 //--- (YPressure definitions)
 //--- (end of YPressure definitions)
+    #--- (YPressure yapiwrapper)
+   #--- (end of YPressure yapiwrapper)
 
 //--- (YPressure declaration)
 /**
- * YPressure Class: Pressure function interface
+ * YPressure Class: pressure sensor control interface, available for instance in the
+ * Yocto-Altimeter-V2, the Yocto-CO2-V2, the Yocto-Meteo-V2 or the Yocto-Pressure
  *
- * The Yoctopuce class YPressure allows you to read and configure Yoctopuce pressure
- * sensors. It inherits from YSensor class the core functions to read measurements,
- * register callback functions, access to the autonomous datalogger.
+ * The YPressure class allows you to read and configure Yoctopuce pressure sensors.
+ * It inherits from YSensor class the core functions to read measurements,
+ * to register callback functions, and to access the autonomous datalogger.
  */
 class YPressure extends YSensor
 {
@@ -82,15 +85,20 @@ class YPressure extends YSensor
      *
      * This function does not require that the pressure sensor is online at the time
      * it is invoked. The returned object is nevertheless valid.
-     * Use the method YPressure.isOnline() to test if the pressure sensor is
+     * Use the method isOnline() to test if the pressure sensor is
      * indeed online at a given time. In case of ambiguity when looking for
      * a pressure sensor by logical name, no error is notified: the first instance
      * found is returned. The search is performed first by hardware name,
      * then by logical name.
      *
-     * @param func : a string that uniquely characterizes the pressure sensor
+     * If a call to this object's is_online() method returns FALSE although
+     * you are certain that the matching device is plugged, make sure that you did
+     * call registerHub() at application initialization time.
      *
-     * @return a YPressure object allowing you to drive the pressure sensor.
+     * @param string $func : a string that uniquely characterizes the pressure sensor, for instance
+     *         YALTIMK2.pressure.
+     *
+     * @return YPressure : a YPressure object allowing you to drive the pressure sensor.
      */
     public static function FindPressure($func)
     {
@@ -105,8 +113,11 @@ class YPressure extends YSensor
 
     /**
      * Continues the enumeration of pressure sensors started using yFirstPressure().
+     * Caution: You can't make any assumption about the returned pressure sensors order.
+     * If you want to find a specific a pressure sensor, use Pressure.findPressure()
+     * and a hardwareID or a logical name.
      *
-     * @return a pointer to a YPressure object, corresponding to
+     * @return YPressure : a pointer to a YPressure object, corresponding to
      *         a pressure sensor currently online, or a null pointer
      *         if there are no more pressure sensors to enumerate.
      */
@@ -115,15 +126,15 @@ class YPressure extends YSensor
         if($resolve->errorType != YAPI_SUCCESS) return null;
         $next_hwid = YAPI::getNextHardwareId($this->_className, $resolve->result);
         if($next_hwid == null) return null;
-        return yFindPressure($next_hwid);
+        return self::FindPressure($next_hwid);
     }
 
     /**
      * Starts the enumeration of pressure sensors currently accessible.
-     * Use the method YPressure.nextPressure() to iterate on
+     * Use the method YPressure::nextPressure() to iterate on
      * next pressure sensors.
      *
-     * @return a pointer to a YPressure object, corresponding to
+     * @return YPressure : a pointer to a YPressure object, corresponding to
      *         the first pressure sensor currently online, or a null pointer
      *         if there are none.
      */
@@ -137,7 +148,7 @@ class YPressure extends YSensor
 
 };
 
-//--- (Pressure functions)
+//--- (YPressure functions)
 
 /**
  * Retrieves a pressure sensor for a given identifier.
@@ -152,15 +163,20 @@ class YPressure extends YSensor
  *
  * This function does not require that the pressure sensor is online at the time
  * it is invoked. The returned object is nevertheless valid.
- * Use the method YPressure.isOnline() to test if the pressure sensor is
+ * Use the method isOnline() to test if the pressure sensor is
  * indeed online at a given time. In case of ambiguity when looking for
  * a pressure sensor by logical name, no error is notified: the first instance
  * found is returned. The search is performed first by hardware name,
  * then by logical name.
  *
- * @param func : a string that uniquely characterizes the pressure sensor
+ * If a call to this object's is_online() method returns FALSE although
+ * you are certain that the matching device is plugged, make sure that you did
+ * call registerHub() at application initialization time.
  *
- * @return a YPressure object allowing you to drive the pressure sensor.
+ * @param string $func : a string that uniquely characterizes the pressure sensor, for instance
+ *         YALTIMK2.pressure.
+ *
+ * @return YPressure : a YPressure object allowing you to drive the pressure sensor.
  */
 function yFindPressure($func)
 {
@@ -169,10 +185,10 @@ function yFindPressure($func)
 
 /**
  * Starts the enumeration of pressure sensors currently accessible.
- * Use the method YPressure.nextPressure() to iterate on
+ * Use the method YPressure::nextPressure() to iterate on
  * next pressure sensors.
  *
- * @return a pointer to a YPressure object, corresponding to
+ * @return YPressure : a pointer to a YPressure object, corresponding to
  *         the first pressure sensor currently online, or a null pointer
  *         if there are none.
  */
@@ -181,5 +197,5 @@ function yFirstPressure()
     return YPressure::FirstPressure();
 }
 
-//--- (end of Pressure functions)
+//--- (end of YPressure functions)
 ?>

@@ -1,11 +1,11 @@
 <?php
 /*********************************************************************
  *
- * $Id: yocto_segmenteddisplay.php 23243 2016-02-23 14:13:12Z seb $
+ *  $Id: yocto_segmenteddisplay.php 43580 2021-01-26 17:46:01Z mvuilleu $
  *
- * Implements YSegmentedDisplay, the high-level API for SegmentedDisplay functions
+ *  Implements YSegmentedDisplay, the high-level API for SegmentedDisplay functions
  *
- * - - - - - - - - - License information: - - - - - - - - - 
+ *  - - - - - - - - - License information: - - - - - - - - -
  *
  *  Copyright (C) 2011 and beyond by Yoctopuce Sarl, Switzerland.
  *
@@ -24,7 +24,7 @@
  *  obligations.
  *
  *  THE SOFTWARE AND DOCUMENTATION ARE PROVIDED 'AS IS' WITHOUT
- *  WARRANTY OF ANY KIND, EITHER EXPRESS OR IMPLIED, INCLUDING 
+ *  WARRANTY OF ANY KIND, EITHER EXPRESS OR IMPLIED, INCLUDING
  *  WITHOUT LIMITATION, ANY WARRANTY OF MERCHANTABILITY, FITNESS
  *  FOR A PARTICULAR PURPOSE, TITLE AND NON-INFRINGEMENT. IN NO
  *  EVENT SHALL LICENSOR BE LIABLE FOR ANY INCIDENTAL, SPECIAL,
@@ -48,10 +48,12 @@ if(!defined('Y_DISPLAYMODE_AUTO60'))         define('Y_DISPLAYMODE_AUTO60',     
 if(!defined('Y_DISPLAYMODE_INVALID'))        define('Y_DISPLAYMODE_INVALID',       -1);
 if(!defined('Y_DISPLAYEDTEXT_INVALID'))      define('Y_DISPLAYEDTEXT_INVALID',     YAPI_INVALID_STRING);
 //--- (end of YSegmentedDisplay definitions)
+    #--- (YSegmentedDisplay yapiwrapper)
+   #--- (end of YSegmentedDisplay yapiwrapper)
 
 //--- (YSegmentedDisplay declaration)
 /**
- * YSegmentedDisplay Class: SegmentedDisplay function interface
+ * YSegmentedDisplay Class: segmented display control interface
  *
  * The SegmentedDisplay class allows you to drive segmented displays.
  */
@@ -97,26 +99,28 @@ class YSegmentedDisplay extends YFunction
     /**
      * Returns the text currently displayed on the screen.
      *
-     * @return a string corresponding to the text currently displayed on the screen
+     * @return string : a string corresponding to the text currently displayed on the screen
      *
-     * On failure, throws an exception or returns Y_DISPLAYEDTEXT_INVALID.
+     * On failure, throws an exception or returns YSegmentedDisplay::DISPLAYEDTEXT_INVALID.
      */
     public function get_displayedText()
     {
+        // $res                    is a string;
         if ($this->_cacheExpiration <= YAPI::GetTickCount()) {
-            if ($this->load(YAPI::$defaultCacheValidity) != YAPI_SUCCESS) {
+            if ($this->load(YAPI::$_yapiContext->GetCacheValidity()) != YAPI_SUCCESS) {
                 return Y_DISPLAYEDTEXT_INVALID;
             }
         }
-        return $this->_displayedText;
+        $res = $this->_displayedText;
+        return $res;
     }
 
     /**
      * Changes the text currently displayed on the screen.
      *
-     * @param newval : a string corresponding to the text currently displayed on the screen
+     * @param string $newval : a string corresponding to the text currently displayed on the screen
      *
-     * @return YAPI_SUCCESS if the call succeeds.
+     * @return integer : YAPI::SUCCESS if the call succeeds.
      *
      * On failure, throws an exception or returns a negative error code.
      */
@@ -128,12 +132,14 @@ class YSegmentedDisplay extends YFunction
 
     public function get_displayMode()
     {
+        // $res                    is a enumDISPLAYMODE;
         if ($this->_cacheExpiration <= YAPI::GetTickCount()) {
-            if ($this->load(YAPI::$defaultCacheValidity) != YAPI_SUCCESS) {
+            if ($this->load(YAPI::$_yapiContext->GetCacheValidity()) != YAPI_SUCCESS) {
                 return Y_DISPLAYMODE_INVALID;
             }
         }
-        return $this->_displayMode;
+        $res = $this->_displayMode;
+        return $res;
     }
 
     public function set_displayMode($newval)
@@ -153,17 +159,22 @@ class YSegmentedDisplay extends YFunction
      * <li>ModuleLogicalName.FunctionLogicalName</li>
      * </ul>
      *
-     * This function does not require that the segmented displays is online at the time
+     * This function does not require that the segmented display is online at the time
      * it is invoked. The returned object is nevertheless valid.
-     * Use the method YSegmentedDisplay.isOnline() to test if the segmented displays is
+     * Use the method isOnline() to test if the segmented display is
      * indeed online at a given time. In case of ambiguity when looking for
      * a segmented display by logical name, no error is notified: the first instance
      * found is returned. The search is performed first by hardware name,
      * then by logical name.
      *
-     * @param func : a string that uniquely characterizes the segmented displays
+     * If a call to this object's is_online() method returns FALSE although
+     * you are certain that the matching device is plugged, make sure that you did
+     * call registerHub() at application initialization time.
      *
-     * @return a YSegmentedDisplay object allowing you to drive the segmented displays.
+     * @param string $func : a string that uniquely characterizes the segmented display, for instance
+     *         MyDevice.segmentedDisplay.
+     *
+     * @return YSegmentedDisplay : a YSegmentedDisplay object allowing you to drive the segmented display.
      */
     public static function FindSegmentedDisplay($func)
     {
@@ -190,8 +201,11 @@ class YSegmentedDisplay extends YFunction
 
     /**
      * Continues the enumeration of segmented displays started using yFirstSegmentedDisplay().
+     * Caution: You can't make any assumption about the returned segmented displays order.
+     * If you want to find a specific a segmented display, use SegmentedDisplay.findSegmentedDisplay()
+     * and a hardwareID or a logical name.
      *
-     * @return a pointer to a YSegmentedDisplay object, corresponding to
+     * @return YSegmentedDisplay : a pointer to a YSegmentedDisplay object, corresponding to
      *         a segmented display currently online, or a null pointer
      *         if there are no more segmented displays to enumerate.
      */
@@ -200,16 +214,16 @@ class YSegmentedDisplay extends YFunction
         if($resolve->errorType != YAPI_SUCCESS) return null;
         $next_hwid = YAPI::getNextHardwareId($this->_className, $resolve->result);
         if($next_hwid == null) return null;
-        return yFindSegmentedDisplay($next_hwid);
+        return self::FindSegmentedDisplay($next_hwid);
     }
 
     /**
      * Starts the enumeration of segmented displays currently accessible.
-     * Use the method YSegmentedDisplay.nextSegmentedDisplay() to iterate on
+     * Use the method YSegmentedDisplay::nextSegmentedDisplay() to iterate on
      * next segmented displays.
      *
-     * @return a pointer to a YSegmentedDisplay object, corresponding to
-     *         the first segmented displays currently online, or a null pointer
+     * @return YSegmentedDisplay : a pointer to a YSegmentedDisplay object, corresponding to
+     *         the first segmented display currently online, or a null pointer
      *         if there are none.
      */
     public static function FirstSegmentedDisplay()
@@ -222,7 +236,7 @@ class YSegmentedDisplay extends YFunction
 
 };
 
-//--- (SegmentedDisplay functions)
+//--- (YSegmentedDisplay functions)
 
 /**
  * Retrieves a segmented display for a given identifier.
@@ -235,17 +249,22 @@ class YSegmentedDisplay extends YFunction
  * <li>ModuleLogicalName.FunctionLogicalName</li>
  * </ul>
  *
- * This function does not require that the segmented displays is online at the time
+ * This function does not require that the segmented display is online at the time
  * it is invoked. The returned object is nevertheless valid.
- * Use the method YSegmentedDisplay.isOnline() to test if the segmented displays is
+ * Use the method isOnline() to test if the segmented display is
  * indeed online at a given time. In case of ambiguity when looking for
  * a segmented display by logical name, no error is notified: the first instance
  * found is returned. The search is performed first by hardware name,
  * then by logical name.
  *
- * @param func : a string that uniquely characterizes the segmented displays
+ * If a call to this object's is_online() method returns FALSE although
+ * you are certain that the matching device is plugged, make sure that you did
+ * call registerHub() at application initialization time.
  *
- * @return a YSegmentedDisplay object allowing you to drive the segmented displays.
+ * @param string $func : a string that uniquely characterizes the segmented display, for instance
+ *         MyDevice.segmentedDisplay.
+ *
+ * @return YSegmentedDisplay : a YSegmentedDisplay object allowing you to drive the segmented display.
  */
 function yFindSegmentedDisplay($func)
 {
@@ -254,11 +273,11 @@ function yFindSegmentedDisplay($func)
 
 /**
  * Starts the enumeration of segmented displays currently accessible.
- * Use the method YSegmentedDisplay.nextSegmentedDisplay() to iterate on
+ * Use the method YSegmentedDisplay::nextSegmentedDisplay() to iterate on
  * next segmented displays.
  *
- * @return a pointer to a YSegmentedDisplay object, corresponding to
- *         the first segmented displays currently online, or a null pointer
+ * @return YSegmentedDisplay : a pointer to a YSegmentedDisplay object, corresponding to
+ *         the first segmented display currently online, or a null pointer
  *         if there are none.
  */
 function yFirstSegmentedDisplay()
@@ -266,5 +285,5 @@ function yFirstSegmentedDisplay()
     return YSegmentedDisplay::FirstSegmentedDisplay();
 }
 
-//--- (end of SegmentedDisplay functions)
+//--- (end of YSegmentedDisplay functions)
 ?>

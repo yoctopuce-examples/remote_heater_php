@@ -1,7 +1,7 @@
 <?php
 /*********************************************************************
  *
- * $Id: yocto_messagebox.php 24649 2016-05-31 11:20:13Z mvuilleu $
+ * $Id: yocto_messagebox.php 43580 2021-01-26 17:46:01Z mvuilleu $
  *
  * Implements YMessageBox, the high-level API for MessageBox functions
  *
@@ -45,9 +45,10 @@
 
 //--- (generated code: YSms declaration)
 /**
- * YSms Class: SMS message sent or received
+ * YSms Class: SMS message sent or received, returned by messageBox.get_messages or messageBox.newMessage
  *
- *
+ * YSms objects are used to describe an SMS message, received or to be sent.
+ * These objects are used in particular in conjunction with the YMessageBox class.
  */
 class YSms
 {
@@ -152,18 +153,24 @@ class YSms
         return $this->_udata;
     }
 
+    /**
+     * Returns the content of the message.
+     *
+     * @return string :  a string with the content of the message.
+     */
     public function get_textData()
     {
         // $isolatin               is a bin;
         // $isosize                is a int;
         // $i                      is a int;
-        
         if ($this->_alphab == 0) {
+            // using GSM standard 7-bit alphabet
             return $this->_mbox->gsm2str($this->_udata);
         }
         if ($this->_alphab == 2) {
+            // using UCS-2 alphabet
             $isosize = ((strlen($this->_udata)) >> (1));
-            $isolatin =  pack('C',array_fill(0, $isosize, 0));
+            $isolatin = ($isosize > 0 ? pack('C',array_fill(0, $isosize, 0)) : '');
             $i = 0;
             while ($i < $isosize) {
                 $isolatin[$i] = pack('C', ord($this->_udata[2*$i+1]));
@@ -171,7 +178,6 @@ class YSms
             }
             return $isolatin;
         }
-        
         // default: convert 8 bit to string as-is
         return $this->_udata;
     }
@@ -182,11 +188,12 @@ class YSms
         // $unisize                is a int;
         // $unival                 is a int;
         // $i                      is a int;
-        
         if ($this->_alphab == 0) {
+            // using GSM standard 7-bit alphabet
             return $this->_mbox->gsm2unicode($this->_udata);
         }
         if ($this->_alphab == 2) {
+            // using UCS-2 alphabet
             $unisize = ((strlen($this->_udata)) >> (1));
             while(sizeof($res) > 0) { array_pop($res); };
             $i = 0;
@@ -196,6 +203,7 @@ class YSms
                 $i = $i + 1;
             }
         } else {
+            // return straight 8-bit values
             $unisize = strlen($this->_udata);
             while(sizeof($res) > 0) { array_pop($res); };
             $i = 0;
@@ -356,7 +364,6 @@ class YSms
         // $udatalen               is a int;
         // $i                      is a int;
         // $uni                    is a int;
-        
         if ($this->_alphab == 2) {
             return YAPI_SUCCESS;
         }
@@ -373,12 +380,21 @@ class YSms
             }
         }
         $this->_alphab = 2;
-        $this->_udata =  pack('C',array_fill(0, 0, 0));
+        $this->_udata = '';
         $this->addUnicodeData($ucs2);
-        
         return YAPI_SUCCESS;
     }
 
+    /**
+     * Add a regular text to the SMS. This function support messages
+     * of more than 160 characters. ISO-latin accented characters
+     * are supported. For messages with special unicode characters such as asian
+     * characters and emoticons, use the  addUnicodeData method.
+     *
+     * @param string $val : the text to be sent in the message
+     *
+     * @return integer : YAPI::SUCCESS when the call succeeds.
+     */
     public function addText($val)
     {
         // $udata                  is a bin;
@@ -386,15 +402,15 @@ class YSms
         // $newdata                is a bin;
         // $newdatalen             is a int;
         // $i                      is a int;
-        
         if (strlen($val) == 0) {
             return YAPI_SUCCESS;
         }
-        
         if ($this->_alphab == 0) {
+            // Try to append using GSM 7-bit alphabet
             $newdata = $this->_mbox->str2gsm($val);
             $newdatalen = strlen($newdata);
             if ($newdatalen == 0) {
+                // 7-bit not possible, switch to unicode
                 $this->convertToUnicode();
                 $newdata = $val;
                 $newdatalen = strlen($newdata);
@@ -405,7 +421,8 @@ class YSms
         }
         $udatalen = strlen($this->_udata);
         if ($this->_alphab == 2) {
-            $udata =  pack('C',array_fill(0, $udatalen + 2*$newdatalen, 0));
+            // Append in unicode directly
+            $udata = ($udatalen + 2*$newdatalen > 0 ? pack('C',array_fill(0, $udatalen + 2*$newdatalen, 0)) : '');
             $i = 0;
             while ($i < $udatalen) {
                 $udata[$i] = pack('C', ord($this->_udata[$i]));
@@ -418,7 +435,8 @@ class YSms
                 $i = $i + 1;
             }
         } else {
-            $udata =  pack('C',array_fill(0, $udatalen+$newdatalen, 0));
+            // Append binary buffers
+            $udata = ($udatalen+$newdatalen > 0 ? pack('C',array_fill(0, $udatalen+$newdatalen, 0)) : '');
             $i = 0;
             while ($i < $udatalen) {
                 $udata[$i] = pack('C', ord($this->_udata[$i]));
@@ -431,10 +449,17 @@ class YSms
                 $i = $i + 1;
             }
         }
-        
         return $this->set_userData($udata);
     }
 
+    /**
+     * Add a unicode text to the SMS. This function support messages
+     * of more than 160 characters, using SMS concatenation.
+     *
+     * @param Integer[] $val : an array of special unicode characters
+     *
+     * @return integer : YAPI::SUCCESS when the call succeeds.
+     */
     public function addUnicodeData($val)
     {
         // $arrlen                 is a int;
@@ -444,7 +469,6 @@ class YSms
         // $udata                  is a bin;
         // $udatalen               is a int;
         // $surrogate              is a int;
-        
         if ($this->_alphab != 2) {
             $this->convertToUnicode();
         }
@@ -461,7 +485,7 @@ class YSms
         }
         // now build utf-16 buffer
         $udatalen = strlen($this->_udata);
-        $udata =  pack('C',array_fill(0, $udatalen+2*$newdatalen, 0));
+        $udata = ($udatalen+2*$newdatalen > 0 ? pack('C',array_fill(0, $udatalen+2*$newdatalen, 0)) : '');
         $i = 0;
         while ($i < $udatalen) {
             $udata[$i] = pack('C', ord($this->_udata[$i]));
@@ -483,7 +507,6 @@ class YSms
             $udatalen = $udatalen + 2;
             $i = $i + 1;
         }
-        
         return $this->set_userData($udata);
     }
 
@@ -509,7 +532,6 @@ class YSms
         if ($this->_npdu == 0) {
             return YAPI_INVALID_ARGUMENT;
         }
-        
         while(sizeof($sorted) > 0) { array_pop($sorted); };
         $partno = 0;
         while ($partno < $this->_npdu) {
@@ -544,7 +566,7 @@ class YSms
             $totsize = $totsize + strlen($subdata);
             $partno = $partno + 1;
         }
-        $res =  pack('C',array_fill(0, $totsize, 0));
+        $res = ($totsize > 0 ? pack('C',array_fill(0, $totsize, 0)) : '');
         $totsize = 0;
         $partno = 0;
         while ($partno < sizeof($this->_parts)) {
@@ -583,11 +605,11 @@ class YSms
             $i = $i + 1;
         }
         if ($numlen == 0) {
-            $res =  pack('C',array_fill(0, 1, 0));
+            $res = (1 > 0 ? pack('C',array_fill(0, 1, 0)) : '');
             $res[0] = pack('C', 0);
             return $res;
         }
-        $res =  pack('C',array_fill(0, 2+(($numlen+1) >> (1)), 0));
+        $res = (2+(($numlen+1) >> (1)) > 0 ? pack('C',array_fill(0, 2+(($numlen+1) >> (1)), 0)) : '');
         $res[0] = pack('C', $numlen);
         if (ord($bytes[0]) == 43) {
             $res[1] = pack('C', 145);
@@ -632,8 +654,9 @@ class YSms
         $res = '';
         $addrType = ((ord($addr[$ofs])) & (112));
         if ($addrType == 80) {
+            // alphanumeric number
             $siz = intVal((4*$siz) / (7));
-            $gsm7 =  pack('C',array_fill(0, $siz, 0));
+            $gsm7 = ($siz > 0 ? pack('C',array_fill(0, $siz, 0)) : '');
             $rpos = 1;
             $carry = 0;
             $nbits = 0;
@@ -654,6 +677,7 @@ class YSms
             }
             return $this->_mbox->gsm2str($gsm7);
         } else {
+            // standard phone number
             if ($addrType == 16) {
                 $res = '+';
             }
@@ -664,6 +688,7 @@ class YSms
                 $res = sprintf('%s%x%x', $res, (($byt) & (15)), (($byt) >> (4)));
                 $i = $i + 1;
             }
+            // remove padding digit if needed
             if (((ord($addr[$ofs+$siz])) >> (4)) == 15) {
                 $res = substr($res,  0, strlen($res)-1);
             }
@@ -682,12 +707,12 @@ class YSms
         // $v2                     is a int;
         $explen = strlen($exp);
         if ($explen == 0) {
-            $res =  pack('C',array_fill(0, 0, 0));
+            $res = '';
             return $res;
         }
         if (substr($exp, 0, 1) == '+') {
             $n = intVal(substr($exp, 1, $explen-1));
-            $res =  pack('C',array_fill(0, 1, 0));
+            $res = (1 > 0 ? pack('C',array_fill(0, 1, 0)) : '');
             if ($n > 30*86400) {
                 $n = 192+intVal((($n+6*86400)) / ((7*86400)));
             } else {
@@ -708,11 +733,12 @@ class YSms
             return $res;
         }
         if (substr($exp, 4, 1) == '-' || substr($exp, 4, 1) == '/') {
+            // ignore century
             $exp = substr($exp,  2, $explen-2);
             $explen = strlen($exp);
         }
         $expasc = $exp;
-        $res =  pack('C',array_fill(0, 7, 0));
+        $res = (7 > 0 ? pack('C',array_fill(0, 7, 0)) : '');
         $n = 0;
         $i = 0;
         while (($i+1 < $explen) && ($n < 7)) {
@@ -734,6 +760,7 @@ class YSms
             $n = $n + 1;
         }
         if ($i+2 < $explen) {
+            // convert for timezone in cleartext ISO format +/-nn:nn
             $v1 = ord($expasc[$i-3]);
             $v2 = ord($expasc[$i]);
             if ((($v1 == 43) || ($v1 == 45)) && ($v2 == 58)) {
@@ -851,23 +878,25 @@ class YSms
         // $wpos                   is a int;
         // $carry                  is a int;
         // $nbits                  is a int;
-        // $$thisb                 is a int;
+        // $thi_b                  is a int;
         // nbits = number of bits in carry
         $udsize = $this->udataSize();
         $udhsize = strlen($this->_udh);
         $udlen = strlen($this->_udata);
-        $res =  pack('C',array_fill(0, 1+$udsize, 0));
+        $res = (1+$udsize > 0 ? pack('C',array_fill(0, 1+$udsize, 0)) : '');
         $udhlen = 0;
         $nbits = 0;
         $carry = 0;
         // 1. Encode UDL
         if ($this->_alphab == 0) {
+            // 7-bit encoding
             if ($udhsize > 0) {
                 $udhlen = intVal(((8 + 8*$udhsize + 6)) / (7));
                 $nbits = 7*$udhlen - 8 - 8*$udhsize;
             }
             $res[0] = pack('C', $udhlen+$udlen);
         } else {
+            // 8-bit encoding
             $res[0] = pack('C', $udsize);
         }
         // 2. Encode UDHL and UDL
@@ -884,17 +913,18 @@ class YSms
         }
         // 3. Encode UD
         if ($this->_alphab == 0) {
+            // 7-bit encoding
             $i = 0;
             while ($i < $udlen) {
                 if ($nbits == 0) {
                     $carry = ord($this->_udata[$i]);
                     $nbits = 7;
                 } else {
-                    $$thisb = ord($this->_udata[$i]);
-                    $res[$wpos] = pack('C', (($carry) | (((((($$thisb) << ($nbits)))) & (255)))));
+                    $thi_b = ord($this->_udata[$i]);
+                    $res[$wpos] = pack('C', (($carry) | (((((($thi_b) << ($nbits)))) & (255)))));
                     $wpos = $wpos + 1;
                     $nbits = $nbits - 1;
-                    $carry = (($$thisb) >> ((7 - $nbits)));
+                    $carry = (($thi_b) >> ((7 - $nbits)));
                 }
                 $i = $i + 1;
             }
@@ -902,6 +932,7 @@ class YSms
                 $res[$wpos] = pack('C', $carry);
             }
         } else {
+            // 8-bit encoding
             $i = 0;
             while ($i < $udlen) {
                 $res[$wpos] = pack('C', ord($this->_udata[$i]));
@@ -936,9 +967,9 @@ class YSms
         $wpos = 0;
         while ($wpos < $udlen) {
             $partno = $partno + 1;
-            $newudh =  pack('C',array_fill(0, 5+$udhsize, 0));
-            $newudh[0] = pack('C', 0);
-            $newudh[1] = pack('C', 3);
+            $newudh = (5+$udhsize > 0 ? pack('C',array_fill(0, 5+$udhsize, 0)) : '');
+            $newudh[0] = pack('C', 0);           // IEI: concatenated message
+            $newudh[1] = pack('C', 3);           // IEDL: 3 bytes
             $newudh[2] = pack('C', $this->_mref);
             $newudh[3] = pack('C', $this->_npdu);
             $newudh[4] = pack('C', $partno);
@@ -952,7 +983,7 @@ class YSms
             } else {
                 $partlen = $udlen-$wpos;
             }
-            $newud =  pack('C',array_fill(0, $partlen, 0));
+            $newud = ($partlen > 0 ? pack('C',array_fill(0, $partlen, 0)) : '');
             $i = 0;
             while ($i < $partlen) {
                 $newud[$i] = pack('C', ord($this->_udata[$wpos]));
@@ -988,7 +1019,8 @@ class YSms
         // Determine if the message can fit within a single PDU
         while(sizeof($this->_parts) > 0) { array_pop($this->_parts); };
         if ($this->udataSize() > 140) {
-            $this->_pdu =  pack('C',array_fill(0, 0, 0));
+            // multiple PDU are needed
+            $this->_pdu = '';
             return $this->generateParts();
         }
         $sca = $this->encodeAddress($this->_smsc);
@@ -999,12 +1031,12 @@ class YSms
         $udata = $this->encodeUserData();
         if ($this->_deliv) {
             $addr = $this->encodeAddress($this->_orig);
-            $hdr =  pack('C',array_fill(0, 1, 0));
+            $hdr = (1 > 0 ? pack('C',array_fill(0, 1, 0)) : '');
             $pdutyp = 0;
         } else {
             $addr = $this->encodeAddress($this->_dest);
             $this->_mref = $this->_mbox->nextMsgRef();
-            $hdr =  pack('C',array_fill(0, 2, 0));
+            $hdr = (2 > 0 ? pack('C',array_fill(0, 2, 0)) : '');
             $hdr[1] = pack('C', $this->_mref);
             $pdutyp = 1;
             if (strlen($stamp) > 0) {
@@ -1019,7 +1051,7 @@ class YSms
         }
         $hdr[0] = pack('C', $pdutyp);
         $pdulen = strlen($sca)+strlen($hdr)+strlen($addr)+2+strlen($stamp)+strlen($udata);
-        $this->_pdu =  pack('C',array_fill(0, $pdulen, 0));
+        $this->_pdu = ($pdulen > 0 ? pack('C',array_fill(0, $pdulen, 0)) : '');
         $pdulen = 0;
         $i = 0;
         while ($i < strlen($sca)) {
@@ -1066,7 +1098,6 @@ class YSms
         // $iei                    is a int;
         // $ielen                  is a int;
         // $sig                    is a str;
-        
         $this->_aggSig = '';
         $this->_aggIdx = 0;
         $this->_aggCnt = 0;
@@ -1078,6 +1109,7 @@ class YSms
             $i = $i + 2;
             if ($i + $ielen <= $udhlen) {
                 if (($iei == 0) && ($ielen == 3)) {
+                    // concatenated SMS, 8-bit ref
                     $sig = sprintf('%s-%s-%02x-%02x', $this->_orig, $this->_dest,
                     $this->_mref, ord($this->_udh[$i]));
                     $this->_aggSig = $sig;
@@ -1085,6 +1117,7 @@ class YSms
                     $this->_aggIdx = ord($this->_udh[$i+2]);
                 }
                 if (($iei == 8) && ($ielen == 4)) {
+                    // concatenated SMS, 16-bit ref
                     $sig = sprintf('%s-%s-%02x-%02x%02x', $this->_orig, $this->_dest,
                     $this->_mref, ord($this->_udh[$i]), ord($this->_udh[$i+1]));
                     $this->_aggSig = $sig;
@@ -1110,11 +1143,9 @@ class YSms
         // $i                      is a int;
         // $carry                  is a int;
         // $nbits                  is a int;
-        // $$thisb                 is a int;
-        
+        // $thi_b                  is a int;
         $this->_pdu = $pdu;
         $this->_npdu = 1;
-        
         // parse meta-data
         $this->_smsc = $this->decodeAddress($pdu, 1, 2*(ord($pdu[0])-1));
         $rpos = 1+ord($pdu[0]);
@@ -1153,7 +1184,6 @@ class YSms
         $this->_mclass = (($dcs) & (16+3));
         $this->_stamp = $this->decodeTimeStamp($pdu, $rpos, $tslen);
         $rpos = $rpos + $tslen;
-        
         // parse user data (including udh)
         $nbits = 0;
         $carry = 0;
@@ -1162,7 +1192,7 @@ class YSms
         if ((($pdutyp) & (64)) != 0) {
             $udhsize = ord($pdu[$rpos]);
             $rpos = $rpos + 1;
-            $this->_udh =  pack('C',array_fill(0, $udhsize, 0));
+            $this->_udh = ($udhsize > 0 ? pack('C',array_fill(0, $udhsize, 0)) : '');
             $i = 0;
             while ($i < $udhsize) {
                 $this->_udh[$i] = pack('C', ord($pdu[$rpos]));
@@ -1170,24 +1200,27 @@ class YSms
                 $i = $i + 1;
             }
             if ($this->_alphab == 0) {
+                // 7-bit encoding
                 $udhlen = intVal(((8 + 8*$udhsize + 6)) / (7));
                 $nbits = 7*$udhlen - 8 - 8*$udhsize;
                 if ($nbits > 0) {
-                    $$thisb = ord($pdu[$rpos]);
+                    $thi_b = ord($pdu[$rpos]);
                     $rpos = $rpos + 1;
-                    $carry = (($$thisb) >> ($nbits));
+                    $carry = (($thi_b) >> ($nbits));
                     $nbits = 8 - $nbits;
                 }
             } else {
+                // byte encoding
                 $udhlen = 1+$udhsize;
             }
             $udlen = $udlen - $udhlen;
         } else {
             $udhsize = 0;
-            $this->_udh =  pack('C',array_fill(0, 0, 0));
+            $this->_udh = '';
         }
-        $this->_udata =  pack('C',array_fill(0, $udlen, 0));
+        $this->_udata = ($udlen > 0 ? pack('C',array_fill(0, $udlen, 0)) : '');
         if ($this->_alphab == 0) {
+            // 7-bit encoding
             $i = 0;
             while ($i < $udlen) {
                 if ($nbits == 7) {
@@ -1195,15 +1228,16 @@ class YSms
                     $carry = 0;
                     $nbits = 0;
                 } else {
-                    $$thisb = ord($pdu[$rpos]);
+                    $thi_b = ord($pdu[$rpos]);
                     $rpos = $rpos + 1;
-                    $this->_udata[$i] = pack('C', (($carry) | (((((($$thisb) << ($nbits)))) & (127)))));
-                    $carry = (($$thisb) >> ((7 - $nbits)));
+                    $this->_udata[$i] = pack('C', (($carry) | (((((($thi_b) << ($nbits)))) & (127)))));
+                    $carry = (($thi_b) >> ((7 - $nbits)));
                     $nbits = $nbits + 1;
                 }
                 $i = $i + 1;
             }
         } else {
+            // 8-bit encoding
             $i = 0;
             while ($i < $udlen) {
                 $this->_udata[$i] = pack('C', ord($pdu[$rpos]));
@@ -1212,16 +1246,23 @@ class YSms
             }
         }
         $this->parseUserDataHeader();
-        
         return YAPI_SUCCESS;
     }
 
+    /**
+     * Sends the SMS to the recipient. Messages of more than 160 characters are supported
+     * using SMS concatenation.
+     *
+     * @return integer : YAPI::SUCCESS when the call succeeds.
+     *
+     * On failure, throws an exception or returns a negative error code.
+     */
     public function send()
     {
         // $i                      is a int;
         // $retcode                is a int;
         // $pdu                    is a YSms;
-        // may throw an exception
+
         if ($this->_npdu == 0) {
             $this->generatePdu();
         }
@@ -1243,7 +1284,7 @@ class YSms
         // $i                      is a int;
         // $retcode                is a int;
         // $pdu                    is a YSms;
-        // may throw an exception
+
         if ($this->_slot > 0) {
             return $this->_mbox->clearSIMSlot($this->_slot);
         }
@@ -1261,9 +1302,9 @@ class YSms
 
 };
 
-//--- (generated code: Sms functions)
+//--- (generated code: YSms functions)
 
-//--- (end of generated code: Sms functions)
+//--- (end of generated code: YSms functions)
 
 //--- (generated code: YMessageBox return codes)
 //--- (end of generated code: YMessageBox return codes)
@@ -1278,9 +1319,10 @@ if(!defined('Y_COMMAND_INVALID'))            define('Y_COMMAND_INVALID',        
 
 //--- (generated code: YMessageBox declaration)
 /**
- * YMessageBox Class: MessageBox function interface
+ * YMessageBox Class: SMS message box interface control interface, available for instance in the
+ * YoctoHub-GSM-2G, the YoctoHub-GSM-3G-EU, the YoctoHub-GSM-3G-NA or the YoctoHub-GSM-4G
  *
- * YMessageBox functions provides SMS sending and receiving capability to
+ * The YMessageBox class provides SMS sending and receiving capability for
  * GSM-enabled Yoctopuce devices.
  */
 class YMessageBox extends YFunction
@@ -1348,70 +1390,78 @@ class YMessageBox extends YFunction
     /**
      * Returns the number of message storage slots currently in use.
      *
-     * @return an integer corresponding to the number of message storage slots currently in use
+     * @return integer : an integer corresponding to the number of message storage slots currently in use
      *
-     * On failure, throws an exception or returns Y_SLOTSINUSE_INVALID.
+     * On failure, throws an exception or returns YMessageBox::SLOTSINUSE_INVALID.
      */
     public function get_slotsInUse()
     {
+        // $res                    is a int;
         if ($this->_cacheExpiration <= YAPI::GetTickCount()) {
-            if ($this->load(YAPI::$defaultCacheValidity) != YAPI_SUCCESS) {
+            if ($this->load(YAPI::$_yapiContext->GetCacheValidity()) != YAPI_SUCCESS) {
                 return Y_SLOTSINUSE_INVALID;
             }
         }
-        return $this->_slotsInUse;
+        $res = $this->_slotsInUse;
+        return $res;
     }
 
     /**
      * Returns the total number of message storage slots on the SIM card.
      *
-     * @return an integer corresponding to the total number of message storage slots on the SIM card
+     * @return integer : an integer corresponding to the total number of message storage slots on the SIM card
      *
-     * On failure, throws an exception or returns Y_SLOTSCOUNT_INVALID.
+     * On failure, throws an exception or returns YMessageBox::SLOTSCOUNT_INVALID.
      */
     public function get_slotsCount()
     {
+        // $res                    is a int;
         if ($this->_cacheExpiration <= YAPI::GetTickCount()) {
-            if ($this->load(YAPI::$defaultCacheValidity) != YAPI_SUCCESS) {
+            if ($this->load(YAPI::$_yapiContext->GetCacheValidity()) != YAPI_SUCCESS) {
                 return Y_SLOTSCOUNT_INVALID;
             }
         }
-        return $this->_slotsCount;
+        $res = $this->_slotsCount;
+        return $res;
     }
 
     public function get_slotsBitmap()
     {
+        // $res                    is a string;
         if ($this->_cacheExpiration <= YAPI::GetTickCount()) {
-            if ($this->load(YAPI::$defaultCacheValidity) != YAPI_SUCCESS) {
+            if ($this->load(YAPI::$_yapiContext->GetCacheValidity()) != YAPI_SUCCESS) {
                 return Y_SLOTSBITMAP_INVALID;
             }
         }
-        return $this->_slotsBitmap;
+        $res = $this->_slotsBitmap;
+        return $res;
     }
 
     /**
      * Returns the number of SMS units sent so far.
      *
-     * @return an integer corresponding to the number of SMS units sent so far
+     * @return integer : an integer corresponding to the number of SMS units sent so far
      *
-     * On failure, throws an exception or returns Y_PDUSENT_INVALID.
+     * On failure, throws an exception or returns YMessageBox::PDUSENT_INVALID.
      */
     public function get_pduSent()
     {
+        // $res                    is a int;
         if ($this->_cacheExpiration <= YAPI::GetTickCount()) {
-            if ($this->load(YAPI::$defaultCacheValidity) != YAPI_SUCCESS) {
+            if ($this->load(YAPI::$_yapiContext->GetCacheValidity()) != YAPI_SUCCESS) {
                 return Y_PDUSENT_INVALID;
             }
         }
-        return $this->_pduSent;
+        $res = $this->_pduSent;
+        return $res;
     }
 
     /**
      * Changes the value of the outgoing SMS units counter.
      *
-     * @param newval : an integer corresponding to the value of the outgoing SMS units counter
+     * @param integer $newval : an integer corresponding to the value of the outgoing SMS units counter
      *
-     * @return YAPI_SUCCESS if the call succeeds.
+     * @return integer : YAPI::SUCCESS if the call succeeds.
      *
      * On failure, throws an exception or returns a negative error code.
      */
@@ -1424,26 +1474,28 @@ class YMessageBox extends YFunction
     /**
      * Returns the number of SMS units received so far.
      *
-     * @return an integer corresponding to the number of SMS units received so far
+     * @return integer : an integer corresponding to the number of SMS units received so far
      *
-     * On failure, throws an exception or returns Y_PDURECEIVED_INVALID.
+     * On failure, throws an exception or returns YMessageBox::PDURECEIVED_INVALID.
      */
     public function get_pduReceived()
     {
+        // $res                    is a int;
         if ($this->_cacheExpiration <= YAPI::GetTickCount()) {
-            if ($this->load(YAPI::$defaultCacheValidity) != YAPI_SUCCESS) {
+            if ($this->load(YAPI::$_yapiContext->GetCacheValidity()) != YAPI_SUCCESS) {
                 return Y_PDURECEIVED_INVALID;
             }
         }
-        return $this->_pduReceived;
+        $res = $this->_pduReceived;
+        return $res;
     }
 
     /**
      * Changes the value of the incoming SMS units counter.
      *
-     * @param newval : an integer corresponding to the value of the incoming SMS units counter
+     * @param integer $newval : an integer corresponding to the value of the incoming SMS units counter
      *
-     * @return YAPI_SUCCESS if the call succeeds.
+     * @return integer : YAPI::SUCCESS if the call succeeds.
      *
      * On failure, throws an exception or returns a negative error code.
      */
@@ -1455,12 +1507,14 @@ class YMessageBox extends YFunction
 
     public function get_command()
     {
+        // $res                    is a string;
         if ($this->_cacheExpiration <= YAPI::GetTickCount()) {
-            if ($this->load(YAPI::$defaultCacheValidity) != YAPI_SUCCESS) {
+            if ($this->load(YAPI::$_yapiContext->GetCacheValidity()) != YAPI_SUCCESS) {
                 return Y_COMMAND_INVALID;
             }
         }
-        return $this->_command;
+        $res = $this->_command;
+        return $res;
     }
 
     public function set_command($newval)
@@ -1470,7 +1524,7 @@ class YMessageBox extends YFunction
     }
 
     /**
-     * Retrieves a MessageBox interface for a given identifier.
+     * Retrieves a SMS message box interface for a given identifier.
      * The identifier can be specified using several formats:
      * <ul>
      * <li>FunctionLogicalName</li>
@@ -1480,17 +1534,22 @@ class YMessageBox extends YFunction
      * <li>ModuleLogicalName.FunctionLogicalName</li>
      * </ul>
      *
-     * This function does not require that the MessageBox interface is online at the time
+     * This function does not require that the SMS message box interface is online at the time
      * it is invoked. The returned object is nevertheless valid.
-     * Use the method YMessageBox.isOnline() to test if the MessageBox interface is
+     * Use the method isOnline() to test if the SMS message box interface is
      * indeed online at a given time. In case of ambiguity when looking for
-     * a MessageBox interface by logical name, no error is notified: the first instance
+     * a SMS message box interface by logical name, no error is notified: the first instance
      * found is returned. The search is performed first by hardware name,
      * then by logical name.
      *
-     * @param func : a string that uniquely characterizes the MessageBox interface
+     * If a call to this object's is_online() method returns FALSE although
+     * you are certain that the matching device is plugged, make sure that you did
+     * call registerHub() at application initialization time.
      *
-     * @return a YMessageBox object allowing you to drive the MessageBox interface.
+     * @param string $func : a string that uniquely characterizes the SMS message box interface, for instance
+     *         YHUBGSM1.messageBox.
+     *
+     * @return YMessageBox : a YMessageBox object allowing you to drive the SMS message box interface.
      */
     public static function FindMessageBox($func)
     {
@@ -1521,8 +1580,7 @@ class YMessageBox extends YFunction
         $arrPdu = Array();      // strArr;
         // $hexPdu                 is a str;
         // $sms                    is a YSms;
-        
-        // may throw an exception
+
         $binPdu = $this->_download(sprintf('sms.json?pos=%d&len=1', $slot));
         $arrPdu = $this->_json_get_array($binPdu);
         $hexPdu = $this->_decode_json_string($arrPdu[0]);
@@ -1536,7 +1594,6 @@ class YMessageBox extends YFunction
     {
         // $i                      is a int;
         // $uni                    is a int;
-        
         while(sizeof($this->_gsm2unicode) > 0) { array_pop($this->_gsm2unicode); };
         // 00-07
         $this->_gsm2unicode[] = 64;
@@ -1596,7 +1653,7 @@ class YMessageBox extends YFunction
         $this->_gsm2unicode[] = 252;
         $this->_gsm2unicode[] = 224;
         // Invert table as well wherever possible
-        $this->_iso2gsm =  pack('C',array_fill(0, 256, 0));
+        $this->_iso2gsm = (256 > 0 ? pack('C',array_fill(0, 256, 0)) : '');
         $i = 0;
         while ($i <= 127) {
             $uni = $this->_gsm2unicode[$i];
@@ -1607,13 +1664,13 @@ class YMessageBox extends YFunction
         }
         $i = 0;
         while ($i < 4) {
+            // mark escape sequences
             $this->_iso2gsm[91+$i] = pack('C', 27);
             $this->_iso2gsm[123+$i] = pack('C', 27);
             $i = $i + 1;
         }
         // Done
         $this->_gsm2unicodeReady = true;
-        
         return YAPI_SUCCESS;
     }
 
@@ -1624,7 +1681,6 @@ class YMessageBox extends YFunction
         // $reslen                 is a int;
         $res = Array();         // intArr;
         // $uni                    is a int;
-        
         if (!($this->_gsm2unicodeReady)) {
             $this->initGsm2Unicode();
         }
@@ -1710,7 +1766,6 @@ class YMessageBox extends YFunction
         // $resbin                 is a bin;
         // $resstr                 is a str;
         // $uni                    is a int;
-        
         if (!($this->_gsm2unicodeReady)) {
             $this->initGsm2Unicode();
         }
@@ -1723,7 +1778,7 @@ class YMessageBox extends YFunction
             }
             $i = $i + 1;
         }
-        $resbin =  pack('C',array_fill(0, $reslen, 0));
+        $resbin = ($reslen > 0 ? pack('C',array_fill(0, $reslen, 0)) : '');
         $i = 0;
         $reslen = 0;
         while ($i < $gsmlen) {
@@ -1804,7 +1859,6 @@ class YMessageBox extends YFunction
         // $extra                  is a int;
         // $res                    is a bin;
         // $wpos                   is a int;
-        
         if (!($this->_gsm2unicodeReady)) {
             $this->initGsm2Unicode();
         }
@@ -1819,12 +1873,13 @@ class YMessageBox extends YFunction
                 $extra = $extra + 1;
             }
             if ($gsm7 == 0) {
-                $res =  pack('C',array_fill(0, 0, 0));
+                // cannot use standard GSM encoding
+                $res = '';
                 return $res;
             }
             $i = $i + 1;
         }
-        $res =  pack('C',array_fill(0, $asclen+$extra, 0));
+        $res = ($asclen+$extra > 0 ? pack('C',array_fill(0, $asclen+$extra, 0)) : '');
         $wpos = 0;
         $i = 0;
         while ($i < $asclen) {
@@ -1890,8 +1945,7 @@ class YMessageBox extends YFunction
         $newAgg = Array();      // YSmsArr;
         $signatures = Array();  // strArr;
         // $sms                    is a YSms;
-        
-        // may throw an exception
+
         $bitmapStr = $this->get_slotsBitmap();
         if ($bitmapStr == $this->_prevBitmapStr) {
             return YAPI_SUCCESS;
@@ -1995,7 +2049,6 @@ class YMessageBox extends YFunction
             $i = $i + 1;
         }
         $this->_messages = $newMsg;
-        
         return YAPI_SUCCESS;
     }
 
@@ -2008,14 +2061,14 @@ class YMessageBox extends YFunction
     /**
      * Clear the SMS units counters.
      *
-     * @return YAPI_SUCCESS when the call succeeds.
+     * @return integer : YAPI::SUCCESS when the call succeeds.
      *
      * On failure, throws an exception or returns a negative error code.
      */
     public function clearPduCounters()
     {
         // $retcode                is a int;
-        // may throw an exception
+
         $retcode = $this->set_pduReceived(0);
         if ($retcode != YAPI_SUCCESS) {
             return $retcode;
@@ -2031,18 +2084,18 @@ class YMessageBox extends YFunction
      * characters and emoticons, use newMessage to create a new message and define
      * the content of using methods addText and addUnicodeData.
      *
-     * @param recipient : a text string with the recipient phone number, either as a
+     * @param string $recipient : a text string with the recipient phone number, either as a
      *         national number, or in international format starting with a plus sign
-     * @param message : the text to be sent in the message
+     * @param string $message : the text to be sent in the message
      *
-     * @return YAPI_SUCCESS when the call succeeds.
+     * @return integer : YAPI::SUCCESS when the call succeeds.
      *
      * On failure, throws an exception or returns a negative error code.
      */
     public function sendTextMessage($recipient,$message)
     {
         // $sms                    is a YSms;
-        // may throw an exception
+
         $sms = new YSms($this);
         $sms->set_recipient($recipient);
         $sms->addText($message);
@@ -2057,18 +2110,18 @@ class YMessageBox extends YFunction
      * characters and emoticons, use newMessage to create a new message and define
      * the content of using methods addText et addUnicodeData.
      *
-     * @param recipient : a text string with the recipient phone number, either as a
+     * @param string $recipient : a text string with the recipient phone number, either as a
      *         national number, or in international format starting with a plus sign
-     * @param message : the text to be sent in the message
+     * @param string $message : the text to be sent in the message
      *
-     * @return YAPI_SUCCESS when the call succeeds.
+     * @return integer : YAPI::SUCCESS when the call succeeds.
      *
      * On failure, throws an exception or returns a negative error code.
      */
     public function sendFlashMessage($recipient,$message)
     {
         // $sms                    is a YSms;
-        // may throw an exception
+
         $sms = new YSms($this);
         $sms->set_recipient($recipient);
         $sms->set_msgClass(0);
@@ -2079,10 +2132,10 @@ class YMessageBox extends YFunction
     /**
      * Creates a new empty SMS message, to be configured and sent later on.
      *
-     * @param recipient : a text string with the recipient phone number, either as a
+     * @param string $recipient : a text string with the recipient phone number, either as a
      *         national number, or in international format starting with a plus sign
      *
-     * @return YAPI_SUCCESS when the call succeeds.
+     * @return YSms : YAPI::SUCCESS when the call succeeds.
      *
      * On failure, throws an exception or returns a negative error code.
      */
@@ -2098,14 +2151,13 @@ class YMessageBox extends YFunction
      * Returns the list of messages received and not deleted. This function
      * will automatically decode concatenated SMS.
      *
-     * @return an YSms object list.
+     * @return YSms[] : an YSms object list.
      *
      * On failure, throws an exception or returns an empty list.
      */
     public function get_messages()
     {
         $this->checkNewMessages();
-        
         return $this->_messages;
     }
 
@@ -2137,27 +2189,30 @@ class YMessageBox extends YFunction
     { return $this->set_command($newval); }
 
     /**
-     * Continues the enumeration of MessageBox interfaces started using yFirstMessageBox().
+     * Continues the enumeration of SMS message box interfaces started using yFirstMessageBox().
+     * Caution: You can't make any assumption about the returned SMS message box interfaces order.
+     * If you want to find a specific a SMS message box interface, use MessageBox.findMessageBox()
+     * and a hardwareID or a logical name.
      *
-     * @return a pointer to a YMessageBox object, corresponding to
-     *         a MessageBox interface currently online, or a null pointer
-     *         if there are no more MessageBox interfaces to enumerate.
+     * @return YMessageBox : a pointer to a YMessageBox object, corresponding to
+     *         a SMS message box interface currently online, or a null pointer
+     *         if there are no more SMS message box interfaces to enumerate.
      */
     public function nextMessageBox()
     {   $resolve = YAPI::resolveFunction($this->_className, $this->_func);
         if($resolve->errorType != YAPI_SUCCESS) return null;
         $next_hwid = YAPI::getNextHardwareId($this->_className, $resolve->result);
         if($next_hwid == null) return null;
-        return yFindMessageBox($next_hwid);
+        return self::FindMessageBox($next_hwid);
     }
 
     /**
-     * Starts the enumeration of MessageBox interfaces currently accessible.
-     * Use the method YMessageBox.nextMessageBox() to iterate on
-     * next MessageBox interfaces.
+     * Starts the enumeration of SMS message box interfaces currently accessible.
+     * Use the method YMessageBox::nextMessageBox() to iterate on
+     * next SMS message box interfaces.
      *
-     * @return a pointer to a YMessageBox object, corresponding to
-     *         the first MessageBox interface currently online, or a null pointer
+     * @return YMessageBox : a pointer to a YMessageBox object, corresponding to
+     *         the first SMS message box interface currently online, or a null pointer
      *         if there are none.
      */
     public static function FirstMessageBox()
@@ -2170,10 +2225,10 @@ class YMessageBox extends YFunction
 
 };
 
-//--- (generated code: MessageBox functions)
+//--- (generated code: YMessageBox functions)
 
 /**
- * Retrieves a MessageBox interface for a given identifier.
+ * Retrieves a SMS message box interface for a given identifier.
  * The identifier can be specified using several formats:
  * <ul>
  * <li>FunctionLogicalName</li>
@@ -2183,17 +2238,22 @@ class YMessageBox extends YFunction
  * <li>ModuleLogicalName.FunctionLogicalName</li>
  * </ul>
  *
- * This function does not require that the MessageBox interface is online at the time
+ * This function does not require that the SMS message box interface is online at the time
  * it is invoked. The returned object is nevertheless valid.
- * Use the method YMessageBox.isOnline() to test if the MessageBox interface is
+ * Use the method isOnline() to test if the SMS message box interface is
  * indeed online at a given time. In case of ambiguity when looking for
- * a MessageBox interface by logical name, no error is notified: the first instance
+ * a SMS message box interface by logical name, no error is notified: the first instance
  * found is returned. The search is performed first by hardware name,
  * then by logical name.
  *
- * @param func : a string that uniquely characterizes the MessageBox interface
+ * If a call to this object's is_online() method returns FALSE although
+ * you are certain that the matching device is plugged, make sure that you did
+ * call registerHub() at application initialization time.
  *
- * @return a YMessageBox object allowing you to drive the MessageBox interface.
+ * @param string $func : a string that uniquely characterizes the SMS message box interface, for instance
+ *         YHUBGSM1.messageBox.
+ *
+ * @return YMessageBox : a YMessageBox object allowing you to drive the SMS message box interface.
  */
 function yFindMessageBox($func)
 {
@@ -2201,12 +2261,12 @@ function yFindMessageBox($func)
 }
 
 /**
- * Starts the enumeration of MessageBox interfaces currently accessible.
- * Use the method YMessageBox.nextMessageBox() to iterate on
- * next MessageBox interfaces.
+ * Starts the enumeration of SMS message box interfaces currently accessible.
+ * Use the method YMessageBox::nextMessageBox() to iterate on
+ * next SMS message box interfaces.
  *
- * @return a pointer to a YMessageBox object, corresponding to
- *         the first MessageBox interface currently online, or a null pointer
+ * @return YMessageBox : a pointer to a YMessageBox object, corresponding to
+ *         the first SMS message box interface currently online, or a null pointer
  *         if there are none.
  */
 function yFirstMessageBox()
@@ -2214,5 +2274,5 @@ function yFirstMessageBox()
     return YMessageBox::FirstMessageBox();
 }
 
-//--- (end of generated code: MessageBox functions)
+//--- (end of generated code: YMessageBox functions)
 ?>

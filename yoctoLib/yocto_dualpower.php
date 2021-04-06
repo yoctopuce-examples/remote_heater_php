@@ -1,11 +1,11 @@
 <?php
 /*********************************************************************
  *
- * $Id: yocto_dualpower.php 23243 2016-02-23 14:13:12Z seb $
+ *  $Id: yocto_dualpower.php 43580 2021-01-26 17:46:01Z mvuilleu $
  *
- * Implements YDualPower, the high-level API for DualPower functions
+ *  Implements YDualPower, the high-level API for DualPower functions
  *
- * - - - - - - - - - License information: - - - - - - - - - 
+ *  - - - - - - - - - License information: - - - - - - - - -
  *
  *  Copyright (C) 2011 and beyond by Yoctopuce Sarl, Switzerland.
  *
@@ -24,7 +24,7 @@
  *  obligations.
  *
  *  THE SOFTWARE AND DOCUMENTATION ARE PROVIDED 'AS IS' WITHOUT
- *  WARRANTY OF ANY KIND, EITHER EXPRESS OR IMPLIED, INCLUDING 
+ *  WARRANTY OF ANY KIND, EITHER EXPRESS OR IMPLIED, INCLUDING
  *  WITHOUT LIMITATION, ANY WARRANTY OF MERCHANTABILITY, FITNESS
  *  FOR A PARTICULAR PURPOSE, TITLE AND NON-INFRINGEMENT. IN NO
  *  EVENT SHALL LICENSOR BE LIABLE FOR ANY INCIDENTAL, SPECIAL,
@@ -52,12 +52,14 @@ if(!defined('Y_POWERCONTROL_OFF'))           define('Y_POWERCONTROL_OFF',       
 if(!defined('Y_POWERCONTROL_INVALID'))       define('Y_POWERCONTROL_INVALID',      -1);
 if(!defined('Y_EXTVOLTAGE_INVALID'))         define('Y_EXTVOLTAGE_INVALID',        YAPI_INVALID_UINT);
 //--- (end of YDualPower definitions)
+    #--- (YDualPower yapiwrapper)
+   #--- (end of YDualPower yapiwrapper)
 
 //--- (YDualPower declaration)
 /**
- * YDualPower Class: External power supply control interface
+ * YDualPower Class: dual power switch control interface, available for instance in the Yocto-Servo
  *
- * Yoctopuce application programming interface allows you to control
+ * The YDualPower class allows you to control
  * the power source to use for module functions that require high current.
  * The module can also automatically disconnect the external power
  * when a voltage drop is observed on the external power source
@@ -113,47 +115,54 @@ class YDualPower extends YFunction
     /**
      * Returns the current power source for module functions that require lots of current.
      *
-     * @return a value among Y_POWERSTATE_OFF, Y_POWERSTATE_FROM_USB and Y_POWERSTATE_FROM_EXT
-     * corresponding to the current power source for module functions that require lots of current
+     * @return integer : a value among YDualPower::POWERSTATE_OFF, YDualPower::POWERSTATE_FROM_USB and
+     * YDualPower::POWERSTATE_FROM_EXT corresponding to the current power source for module functions that
+     * require lots of current
      *
-     * On failure, throws an exception or returns Y_POWERSTATE_INVALID.
+     * On failure, throws an exception or returns YDualPower::POWERSTATE_INVALID.
      */
     public function get_powerState()
     {
+        // $res                    is a enumPWRSTATE;
         if ($this->_cacheExpiration <= YAPI::GetTickCount()) {
-            if ($this->load(YAPI::$defaultCacheValidity) != YAPI_SUCCESS) {
+            if ($this->load(YAPI::$_yapiContext->GetCacheValidity()) != YAPI_SUCCESS) {
                 return Y_POWERSTATE_INVALID;
             }
         }
-        return $this->_powerState;
+        $res = $this->_powerState;
+        return $res;
     }
 
     /**
      * Returns the selected power source for module functions that require lots of current.
      *
-     * @return a value among Y_POWERCONTROL_AUTO, Y_POWERCONTROL_FROM_USB, Y_POWERCONTROL_FROM_EXT and
-     * Y_POWERCONTROL_OFF corresponding to the selected power source for module functions that require lots of current
+     * @return integer : a value among YDualPower::POWERCONTROL_AUTO, YDualPower::POWERCONTROL_FROM_USB,
+     * YDualPower::POWERCONTROL_FROM_EXT and YDualPower::POWERCONTROL_OFF corresponding to the selected
+     * power source for module functions that require lots of current
      *
-     * On failure, throws an exception or returns Y_POWERCONTROL_INVALID.
+     * On failure, throws an exception or returns YDualPower::POWERCONTROL_INVALID.
      */
     public function get_powerControl()
     {
+        // $res                    is a enumPWRCTRL;
         if ($this->_cacheExpiration <= YAPI::GetTickCount()) {
-            if ($this->load(YAPI::$defaultCacheValidity) != YAPI_SUCCESS) {
+            if ($this->load(YAPI::$_yapiContext->GetCacheValidity()) != YAPI_SUCCESS) {
                 return Y_POWERCONTROL_INVALID;
             }
         }
-        return $this->_powerControl;
+        $res = $this->_powerControl;
+        return $res;
     }
 
     /**
      * Changes the selected power source for module functions that require lots of current.
+     * Remember to call the saveToFlash() method of the module if the modification must be kept.
      *
-     * @param newval : a value among Y_POWERCONTROL_AUTO, Y_POWERCONTROL_FROM_USB, Y_POWERCONTROL_FROM_EXT
-     * and Y_POWERCONTROL_OFF corresponding to the selected power source for module functions that require
-     * lots of current
+     * @param integer $newval : a value among YDualPower::POWERCONTROL_AUTO,
+     * YDualPower::POWERCONTROL_FROM_USB, YDualPower::POWERCONTROL_FROM_EXT and YDualPower::POWERCONTROL_OFF
+     * corresponding to the selected power source for module functions that require lots of current
      *
-     * @return YAPI_SUCCESS if the call succeeds.
+     * @return integer : YAPI::SUCCESS if the call succeeds.
      *
      * On failure, throws an exception or returns a negative error code.
      */
@@ -166,22 +175,24 @@ class YDualPower extends YFunction
     /**
      * Returns the measured voltage on the external power source, in millivolts.
      *
-     * @return an integer corresponding to the measured voltage on the external power source, in millivolts
+     * @return integer : an integer corresponding to the measured voltage on the external power source, in millivolts
      *
-     * On failure, throws an exception or returns Y_EXTVOLTAGE_INVALID.
+     * On failure, throws an exception or returns YDualPower::EXTVOLTAGE_INVALID.
      */
     public function get_extVoltage()
     {
+        // $res                    is a int;
         if ($this->_cacheExpiration <= YAPI::GetTickCount()) {
-            if ($this->load(YAPI::$defaultCacheValidity) != YAPI_SUCCESS) {
+            if ($this->load(YAPI::$_yapiContext->GetCacheValidity()) != YAPI_SUCCESS) {
                 return Y_EXTVOLTAGE_INVALID;
             }
         }
-        return $this->_extVoltage;
+        $res = $this->_extVoltage;
+        return $res;
     }
 
     /**
-     * Retrieves a dual power control for a given identifier.
+     * Retrieves a dual power switch for a given identifier.
      * The identifier can be specified using several formats:
      * <ul>
      * <li>FunctionLogicalName</li>
@@ -191,17 +202,22 @@ class YDualPower extends YFunction
      * <li>ModuleLogicalName.FunctionLogicalName</li>
      * </ul>
      *
-     * This function does not require that the power control is online at the time
+     * This function does not require that the dual power switch is online at the time
      * it is invoked. The returned object is nevertheless valid.
-     * Use the method YDualPower.isOnline() to test if the power control is
+     * Use the method isOnline() to test if the dual power switch is
      * indeed online at a given time. In case of ambiguity when looking for
-     * a dual power control by logical name, no error is notified: the first instance
+     * a dual power switch by logical name, no error is notified: the first instance
      * found is returned. The search is performed first by hardware name,
      * then by logical name.
      *
-     * @param func : a string that uniquely characterizes the power control
+     * If a call to this object's is_online() method returns FALSE although
+     * you are certain that the matching device is plugged, make sure that you did
+     * call registerHub() at application initialization time.
      *
-     * @return a YDualPower object allowing you to drive the power control.
+     * @param string $func : a string that uniquely characterizes the dual power switch, for instance
+     *         SERVORC1.dualPower.
+     *
+     * @return YDualPower : a YDualPower object allowing you to drive the dual power switch.
      */
     public static function FindDualPower($func)
     {
@@ -227,27 +243,30 @@ class YDualPower extends YFunction
     { return $this->get_extVoltage(); }
 
     /**
-     * Continues the enumeration of dual power controls started using yFirstDualPower().
+     * Continues the enumeration of dual power switches started using yFirstDualPower().
+     * Caution: You can't make any assumption about the returned dual power switches order.
+     * If you want to find a specific a dual power switch, use DualPower.findDualPower()
+     * and a hardwareID or a logical name.
      *
-     * @return a pointer to a YDualPower object, corresponding to
-     *         a dual power control currently online, or a null pointer
-     *         if there are no more dual power controls to enumerate.
+     * @return YDualPower : a pointer to a YDualPower object, corresponding to
+     *         a dual power switch currently online, or a null pointer
+     *         if there are no more dual power switches to enumerate.
      */
     public function nextDualPower()
     {   $resolve = YAPI::resolveFunction($this->_className, $this->_func);
         if($resolve->errorType != YAPI_SUCCESS) return null;
         $next_hwid = YAPI::getNextHardwareId($this->_className, $resolve->result);
         if($next_hwid == null) return null;
-        return yFindDualPower($next_hwid);
+        return self::FindDualPower($next_hwid);
     }
 
     /**
-     * Starts the enumeration of dual power controls currently accessible.
-     * Use the method YDualPower.nextDualPower() to iterate on
-     * next dual power controls.
+     * Starts the enumeration of dual power switches currently accessible.
+     * Use the method YDualPower::nextDualPower() to iterate on
+     * next dual power switches.
      *
-     * @return a pointer to a YDualPower object, corresponding to
-     *         the first dual power control currently online, or a null pointer
+     * @return YDualPower : a pointer to a YDualPower object, corresponding to
+     *         the first dual power switch currently online, or a null pointer
      *         if there are none.
      */
     public static function FirstDualPower()
@@ -260,10 +279,10 @@ class YDualPower extends YFunction
 
 };
 
-//--- (DualPower functions)
+//--- (YDualPower functions)
 
 /**
- * Retrieves a dual power control for a given identifier.
+ * Retrieves a dual power switch for a given identifier.
  * The identifier can be specified using several formats:
  * <ul>
  * <li>FunctionLogicalName</li>
@@ -273,17 +292,22 @@ class YDualPower extends YFunction
  * <li>ModuleLogicalName.FunctionLogicalName</li>
  * </ul>
  *
- * This function does not require that the power control is online at the time
+ * This function does not require that the dual power switch is online at the time
  * it is invoked. The returned object is nevertheless valid.
- * Use the method YDualPower.isOnline() to test if the power control is
+ * Use the method isOnline() to test if the dual power switch is
  * indeed online at a given time. In case of ambiguity when looking for
- * a dual power control by logical name, no error is notified: the first instance
+ * a dual power switch by logical name, no error is notified: the first instance
  * found is returned. The search is performed first by hardware name,
  * then by logical name.
  *
- * @param func : a string that uniquely characterizes the power control
+ * If a call to this object's is_online() method returns FALSE although
+ * you are certain that the matching device is plugged, make sure that you did
+ * call registerHub() at application initialization time.
  *
- * @return a YDualPower object allowing you to drive the power control.
+ * @param string $func : a string that uniquely characterizes the dual power switch, for instance
+ *         SERVORC1.dualPower.
+ *
+ * @return YDualPower : a YDualPower object allowing you to drive the dual power switch.
  */
 function yFindDualPower($func)
 {
@@ -291,12 +315,12 @@ function yFindDualPower($func)
 }
 
 /**
- * Starts the enumeration of dual power controls currently accessible.
- * Use the method YDualPower.nextDualPower() to iterate on
- * next dual power controls.
+ * Starts the enumeration of dual power switches currently accessible.
+ * Use the method YDualPower::nextDualPower() to iterate on
+ * next dual power switches.
  *
- * @return a pointer to a YDualPower object, corresponding to
- *         the first dual power control currently online, or a null pointer
+ * @return YDualPower : a pointer to a YDualPower object, corresponding to
+ *         the first dual power switch currently online, or a null pointer
  *         if there are none.
  */
 function yFirstDualPower()
@@ -304,5 +328,5 @@ function yFirstDualPower()
     return YDualPower::FirstDualPower();
 }
 
-//--- (end of DualPower functions)
+//--- (end of YDualPower functions)
 ?>

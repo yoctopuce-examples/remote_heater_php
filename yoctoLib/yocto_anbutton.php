@@ -1,11 +1,11 @@
 <?php
 /*********************************************************************
  *
- * $Id: yocto_anbutton.php 23243 2016-02-23 14:13:12Z seb $
+ *  $Id: yocto_anbutton.php 43580 2021-01-26 17:46:01Z mvuilleu $
  *
- * Implements YAnButton, the high-level API for AnButton functions
+ *  Implements YAnButton, the high-level API for AnButton functions
  *
- * - - - - - - - - - License information: - - - - - - - - - 
+ *  - - - - - - - - - License information: - - - - - - - - -
  *
  *  Copyright (C) 2011 and beyond by Yoctopuce Sarl, Switzerland.
  *
@@ -24,7 +24,7 @@
  *  obligations.
  *
  *  THE SOFTWARE AND DOCUMENTATION ARE PROVIDED 'AS IS' WITHOUT
- *  WARRANTY OF ANY KIND, EITHER EXPRESS OR IMPLIED, INCLUDING 
+ *  WARRANTY OF ANY KIND, EITHER EXPRESS OR IMPLIED, INCLUDING
  *  WITHOUT LIMITATION, ANY WARRANTY OF MERCHANTABILITY, FITNESS
  *  FOR A PARTICULAR PURPOSE, TITLE AND NON-INFRINGEMENT. IN NO
  *  EVENT SHALL LICENSOR BE LIABLE FOR ANY INCIDENTAL, SPECIAL,
@@ -47,6 +47,10 @@ if(!defined('Y_ANALOGCALIBRATION_INVALID'))  define('Y_ANALOGCALIBRATION_INVALID
 if(!defined('Y_ISPRESSED_FALSE'))            define('Y_ISPRESSED_FALSE',           0);
 if(!defined('Y_ISPRESSED_TRUE'))             define('Y_ISPRESSED_TRUE',            1);
 if(!defined('Y_ISPRESSED_INVALID'))          define('Y_ISPRESSED_INVALID',         -1);
+if(!defined('Y_INPUTTYPE_ANALOG_FAST'))      define('Y_INPUTTYPE_ANALOG_FAST',     0);
+if(!defined('Y_INPUTTYPE_DIGITAL4'))         define('Y_INPUTTYPE_DIGITAL4',        1);
+if(!defined('Y_INPUTTYPE_ANALOG_SMOOTH'))    define('Y_INPUTTYPE_ANALOG_SMOOTH',   2);
+if(!defined('Y_INPUTTYPE_INVALID'))          define('Y_INPUTTYPE_INVALID',         -1);
 if(!defined('Y_CALIBRATEDVALUE_INVALID'))    define('Y_CALIBRATEDVALUE_INVALID',   YAPI_INVALID_UINT);
 if(!defined('Y_RAWVALUE_INVALID'))           define('Y_RAWVALUE_INVALID',          YAPI_INVALID_UINT);
 if(!defined('Y_CALIBRATIONMAX_INVALID'))     define('Y_CALIBRATIONMAX_INVALID',    YAPI_INVALID_UINT);
@@ -57,12 +61,16 @@ if(!defined('Y_LASTTIMERELEASED_INVALID'))   define('Y_LASTTIMERELEASED_INVALID'
 if(!defined('Y_PULSECOUNTER_INVALID'))       define('Y_PULSECOUNTER_INVALID',      YAPI_INVALID_LONG);
 if(!defined('Y_PULSETIMER_INVALID'))         define('Y_PULSETIMER_INVALID',        YAPI_INVALID_LONG);
 //--- (end of YAnButton definitions)
+    #--- (YAnButton yapiwrapper)
+   #--- (end of YAnButton yapiwrapper)
 
 //--- (YAnButton declaration)
 /**
- * YAnButton Class: AnButton function interface
+ * YAnButton Class: analog input control interface, available for instance in the Yocto-Buzzer, the
+ * Yocto-Knob, the Yocto-MaxiBuzzer or the Yocto-MaxiDisplay
  *
- * Yoctopuce application programming interface allows you to measure the state
+ * The YAnButton class provide access to basic resistive inputs.
+ * Such inputs can be used to measure the state
  * of a simple button as well as to read an analog potentiometer (variable resistance).
  * This can be use for instance with a continuous rotating knob, a throttle grip
  * or a joystick. The module is capable to calibrate itself on min and max values,
@@ -86,6 +94,10 @@ class YAnButton extends YFunction
     const LASTTIMERELEASED_INVALID       = YAPI_INVALID_LONG;
     const PULSECOUNTER_INVALID           = YAPI_INVALID_LONG;
     const PULSETIMER_INVALID             = YAPI_INVALID_LONG;
+    const INPUTTYPE_ANALOG_FAST          = 0;
+    const INPUTTYPE_DIGITAL4             = 1;
+    const INPUTTYPE_ANALOG_SMOOTH        = 2;
+    const INPUTTYPE_INVALID              = -1;
     //--- (end of YAnButton declaration)
 
     //--- (YAnButton attributes)
@@ -100,6 +112,7 @@ class YAnButton extends YFunction
     protected $_lastTimeReleased         = Y_LASTTIMERELEASED_INVALID;   // Time
     protected $_pulseCounter             = Y_PULSECOUNTER_INVALID;       // UInt
     protected $_pulseTimer               = Y_PULSETIMER_INVALID;         // Time
+    protected $_inputType                = Y_INPUTTYPE_INVALID;          // InputType
     //--- (end of YAnButton attributes)
 
     function __construct($str_func)
@@ -149,6 +162,9 @@ class YAnButton extends YFunction
         case 'pulseTimer':
             $this->_pulseTimer = intval($val);
             return 1;
+        case 'inputType':
+            $this->_inputType = intval($val);
+            return 1;
         }
         return parent::_parseAttr($name, $val);
     }
@@ -156,61 +172,68 @@ class YAnButton extends YFunction
     /**
      * Returns the current calibrated input value (between 0 and 1000, included).
      *
-     * @return an integer corresponding to the current calibrated input value (between 0 and 1000, included)
+     * @return integer : an integer corresponding to the current calibrated input value (between 0 and 1000, included)
      *
-     * On failure, throws an exception or returns Y_CALIBRATEDVALUE_INVALID.
+     * On failure, throws an exception or returns YAnButton::CALIBRATEDVALUE_INVALID.
      */
     public function get_calibratedValue()
     {
+        // $res                    is a int;
         if ($this->_cacheExpiration <= YAPI::GetTickCount()) {
-            if ($this->load(YAPI::$defaultCacheValidity) != YAPI_SUCCESS) {
+            if ($this->load(YAPI::$_yapiContext->GetCacheValidity()) != YAPI_SUCCESS) {
                 return Y_CALIBRATEDVALUE_INVALID;
             }
         }
-        return $this->_calibratedValue;
+        $res = $this->_calibratedValue;
+        return $res;
     }
 
     /**
      * Returns the current measured input value as-is (between 0 and 4095, included).
      *
-     * @return an integer corresponding to the current measured input value as-is (between 0 and 4095, included)
+     * @return integer : an integer corresponding to the current measured input value as-is (between 0 and
+     * 4095, included)
      *
-     * On failure, throws an exception or returns Y_RAWVALUE_INVALID.
+     * On failure, throws an exception or returns YAnButton::RAWVALUE_INVALID.
      */
     public function get_rawValue()
     {
+        // $res                    is a int;
         if ($this->_cacheExpiration <= YAPI::GetTickCount()) {
-            if ($this->load(YAPI::$defaultCacheValidity) != YAPI_SUCCESS) {
+            if ($this->load(YAPI::$_yapiContext->GetCacheValidity()) != YAPI_SUCCESS) {
                 return Y_RAWVALUE_INVALID;
             }
         }
-        return $this->_rawValue;
+        $res = $this->_rawValue;
+        return $res;
     }
 
     /**
      * Tells if a calibration process is currently ongoing.
      *
-     * @return either Y_ANALOGCALIBRATION_OFF or Y_ANALOGCALIBRATION_ON
+     * @return integer : either YAnButton::ANALOGCALIBRATION_OFF or YAnButton::ANALOGCALIBRATION_ON
      *
-     * On failure, throws an exception or returns Y_ANALOGCALIBRATION_INVALID.
+     * On failure, throws an exception or returns YAnButton::ANALOGCALIBRATION_INVALID.
      */
     public function get_analogCalibration()
     {
+        // $res                    is a enumONOFF;
         if ($this->_cacheExpiration <= YAPI::GetTickCount()) {
-            if ($this->load(YAPI::$defaultCacheValidity) != YAPI_SUCCESS) {
+            if ($this->load(YAPI::$_yapiContext->GetCacheValidity()) != YAPI_SUCCESS) {
                 return Y_ANALOGCALIBRATION_INVALID;
             }
         }
-        return $this->_analogCalibration;
+        $res = $this->_analogCalibration;
+        return $res;
     }
 
     /**
      * Starts or stops the calibration process. Remember to call the saveToFlash()
      * method of the module at the end of the calibration if the modification must be kept.
      *
-     * @param newval : either Y_ANALOGCALIBRATION_OFF or Y_ANALOGCALIBRATION_ON
+     * @param integer $newval : either YAnButton::ANALOGCALIBRATION_OFF or YAnButton::ANALOGCALIBRATION_ON
      *
-     * @return YAPI_SUCCESS if the call succeeds.
+     * @return integer : YAPI::SUCCESS if the call succeeds.
      *
      * On failure, throws an exception or returns a negative error code.
      */
@@ -223,19 +246,21 @@ class YAnButton extends YFunction
     /**
      * Returns the maximal value measured during the calibration (between 0 and 4095, included).
      *
-     * @return an integer corresponding to the maximal value measured during the calibration (between 0
-     * and 4095, included)
+     * @return integer : an integer corresponding to the maximal value measured during the calibration
+     * (between 0 and 4095, included)
      *
-     * On failure, throws an exception or returns Y_CALIBRATIONMAX_INVALID.
+     * On failure, throws an exception or returns YAnButton::CALIBRATIONMAX_INVALID.
      */
     public function get_calibrationMax()
     {
+        // $res                    is a int;
         if ($this->_cacheExpiration <= YAPI::GetTickCount()) {
-            if ($this->load(YAPI::$defaultCacheValidity) != YAPI_SUCCESS) {
+            if ($this->load(YAPI::$_yapiContext->GetCacheValidity()) != YAPI_SUCCESS) {
                 return Y_CALIBRATIONMAX_INVALID;
             }
         }
-        return $this->_calibrationMax;
+        $res = $this->_calibrationMax;
+        return $res;
     }
 
     /**
@@ -243,11 +268,11 @@ class YAnButton extends YFunction
      * starting the automated calibration.  Remember to call the saveToFlash()
      * method of the module if the modification must be kept.
      *
-     * @param newval : an integer corresponding to the maximal calibration value for the input (between 0
-     * and 4095, included), without actually
+     * @param integer $newval : an integer corresponding to the maximal calibration value for the input
+     * (between 0 and 4095, included), without actually
      *         starting the automated calibration
      *
-     * @return YAPI_SUCCESS if the call succeeds.
+     * @return integer : YAPI::SUCCESS if the call succeeds.
      *
      * On failure, throws an exception or returns a negative error code.
      */
@@ -260,19 +285,21 @@ class YAnButton extends YFunction
     /**
      * Returns the minimal value measured during the calibration (between 0 and 4095, included).
      *
-     * @return an integer corresponding to the minimal value measured during the calibration (between 0
-     * and 4095, included)
+     * @return integer : an integer corresponding to the minimal value measured during the calibration
+     * (between 0 and 4095, included)
      *
-     * On failure, throws an exception or returns Y_CALIBRATIONMIN_INVALID.
+     * On failure, throws an exception or returns YAnButton::CALIBRATIONMIN_INVALID.
      */
     public function get_calibrationMin()
     {
+        // $res                    is a int;
         if ($this->_cacheExpiration <= YAPI::GetTickCount()) {
-            if ($this->load(YAPI::$defaultCacheValidity) != YAPI_SUCCESS) {
+            if ($this->load(YAPI::$_yapiContext->GetCacheValidity()) != YAPI_SUCCESS) {
                 return Y_CALIBRATIONMIN_INVALID;
             }
         }
-        return $this->_calibrationMin;
+        $res = $this->_calibrationMin;
+        return $res;
     }
 
     /**
@@ -280,11 +307,11 @@ class YAnButton extends YFunction
      * starting the automated calibration.  Remember to call the saveToFlash()
      * method of the module if the modification must be kept.
      *
-     * @param newval : an integer corresponding to the minimal calibration value for the input (between 0
-     * and 4095, included), without actually
+     * @param integer $newval : an integer corresponding to the minimal calibration value for the input
+     * (between 0 and 4095, included), without actually
      *         starting the automated calibration
      *
-     * @return YAPI_SUCCESS if the call succeeds.
+     * @return integer : YAPI::SUCCESS if the call succeeds.
      *
      * On failure, throws an exception or returns a negative error code.
      */
@@ -297,19 +324,21 @@ class YAnButton extends YFunction
     /**
      * Returns the sensibility for the input (between 1 and 1000) for triggering user callbacks.
      *
-     * @return an integer corresponding to the sensibility for the input (between 1 and 1000) for
-     * triggering user callbacks
+     * @return integer : an integer corresponding to the sensibility for the input (between 1 and 1000)
+     * for triggering user callbacks
      *
-     * On failure, throws an exception or returns Y_SENSITIVITY_INVALID.
+     * On failure, throws an exception or returns YAnButton::SENSITIVITY_INVALID.
      */
     public function get_sensitivity()
     {
+        // $res                    is a int;
         if ($this->_cacheExpiration <= YAPI::GetTickCount()) {
-            if ($this->load(YAPI::$defaultCacheValidity) != YAPI_SUCCESS) {
+            if ($this->load(YAPI::$_yapiContext->GetCacheValidity()) != YAPI_SUCCESS) {
                 return Y_SENSITIVITY_INVALID;
             }
         }
-        return $this->_sensitivity;
+        $res = $this->_sensitivity;
+        return $res;
     }
 
     /**
@@ -320,10 +349,10 @@ class YAnButton extends YFunction
      * of the input switches from pressed to released and back.
      * Remember to call the saveToFlash() method of the module if the modification must be kept.
      *
-     * @param newval : an integer corresponding to the sensibility for the input (between 1 and 1000) for
-     * triggering user callbacks
+     * @param integer $newval : an integer corresponding to the sensibility for the input (between 1 and
+     * 1000) for triggering user callbacks
      *
-     * @return YAPI_SUCCESS if the call succeeds.
+     * @return integer : YAPI::SUCCESS if the call succeeds.
      *
      * On failure, throws an exception or returns a negative error code.
      */
@@ -336,76 +365,86 @@ class YAnButton extends YFunction
     /**
      * Returns true if the input (considered as binary) is active (closed contact), and false otherwise.
      *
-     * @return either Y_ISPRESSED_FALSE or Y_ISPRESSED_TRUE, according to true if the input (considered as
-     * binary) is active (closed contact), and false otherwise
+     * @return integer : either YAnButton::ISPRESSED_FALSE or YAnButton::ISPRESSED_TRUE, according to true
+     * if the input (considered as binary) is active (closed contact), and false otherwise
      *
-     * On failure, throws an exception or returns Y_ISPRESSED_INVALID.
+     * On failure, throws an exception or returns YAnButton::ISPRESSED_INVALID.
      */
     public function get_isPressed()
     {
+        // $res                    is a enumBOOL;
         if ($this->_cacheExpiration <= YAPI::GetTickCount()) {
-            if ($this->load(YAPI::$defaultCacheValidity) != YAPI_SUCCESS) {
+            if ($this->load(YAPI::$_yapiContext->GetCacheValidity()) != YAPI_SUCCESS) {
                 return Y_ISPRESSED_INVALID;
             }
         }
-        return $this->_isPressed;
+        $res = $this->_isPressed;
+        return $res;
     }
 
     /**
      * Returns the number of elapsed milliseconds between the module power on and the last time
      * the input button was pressed (the input contact transitioned from open to closed).
      *
-     * @return an integer corresponding to the number of elapsed milliseconds between the module power on
-     * and the last time
+     * @return integer : an integer corresponding to the number of elapsed milliseconds between the module
+     * power on and the last time
      *         the input button was pressed (the input contact transitioned from open to closed)
      *
-     * On failure, throws an exception or returns Y_LASTTIMEPRESSED_INVALID.
+     * On failure, throws an exception or returns YAnButton::LASTTIMEPRESSED_INVALID.
      */
     public function get_lastTimePressed()
     {
+        // $res                    is a long;
         if ($this->_cacheExpiration <= YAPI::GetTickCount()) {
-            if ($this->load(YAPI::$defaultCacheValidity) != YAPI_SUCCESS) {
+            if ($this->load(YAPI::$_yapiContext->GetCacheValidity()) != YAPI_SUCCESS) {
                 return Y_LASTTIMEPRESSED_INVALID;
             }
         }
-        return $this->_lastTimePressed;
+        $res = $this->_lastTimePressed;
+        return $res;
     }
 
     /**
      * Returns the number of elapsed milliseconds between the module power on and the last time
      * the input button was released (the input contact transitioned from closed to open).
      *
-     * @return an integer corresponding to the number of elapsed milliseconds between the module power on
-     * and the last time
+     * @return integer : an integer corresponding to the number of elapsed milliseconds between the module
+     * power on and the last time
      *         the input button was released (the input contact transitioned from closed to open)
      *
-     * On failure, throws an exception or returns Y_LASTTIMERELEASED_INVALID.
+     * On failure, throws an exception or returns YAnButton::LASTTIMERELEASED_INVALID.
      */
     public function get_lastTimeReleased()
     {
+        // $res                    is a long;
         if ($this->_cacheExpiration <= YAPI::GetTickCount()) {
-            if ($this->load(YAPI::$defaultCacheValidity) != YAPI_SUCCESS) {
+            if ($this->load(YAPI::$_yapiContext->GetCacheValidity()) != YAPI_SUCCESS) {
                 return Y_LASTTIMERELEASED_INVALID;
             }
         }
-        return $this->_lastTimeReleased;
+        $res = $this->_lastTimeReleased;
+        return $res;
     }
 
     /**
-     * Returns the pulse counter value.
+     * Returns the pulse counter value. The value is a 32 bit integer. In case
+     * of overflow (>=2^32), the counter will wrap. To reset the counter, just
+     * call the resetCounter() method.
      *
-     * @return an integer corresponding to the pulse counter value
+     * @return integer : an integer corresponding to the pulse counter value
      *
-     * On failure, throws an exception or returns Y_PULSECOUNTER_INVALID.
+     * On failure, throws an exception or returns YAnButton::PULSECOUNTER_INVALID.
      */
     public function get_pulseCounter()
     {
+        // $res                    is a long;
         if ($this->_cacheExpiration <= YAPI::GetTickCount()) {
-            if ($this->load(YAPI::$defaultCacheValidity) != YAPI_SUCCESS) {
+            if ($this->load(YAPI::$_yapiContext->GetCacheValidity()) != YAPI_SUCCESS) {
                 return Y_PULSECOUNTER_INVALID;
             }
         }
-        return $this->_pulseCounter;
+        $res = $this->_pulseCounter;
+        return $res;
     }
 
     public function set_pulseCounter($newval)
@@ -417,18 +456,59 @@ class YAnButton extends YFunction
     /**
      * Returns the timer of the pulses counter (ms).
      *
-     * @return an integer corresponding to the timer of the pulses counter (ms)
+     * @return integer : an integer corresponding to the timer of the pulses counter (ms)
      *
-     * On failure, throws an exception or returns Y_PULSETIMER_INVALID.
+     * On failure, throws an exception or returns YAnButton::PULSETIMER_INVALID.
      */
     public function get_pulseTimer()
     {
+        // $res                    is a long;
         if ($this->_cacheExpiration <= YAPI::GetTickCount()) {
-            if ($this->load(YAPI::$defaultCacheValidity) != YAPI_SUCCESS) {
+            if ($this->load(YAPI::$_yapiContext->GetCacheValidity()) != YAPI_SUCCESS) {
                 return Y_PULSETIMER_INVALID;
             }
         }
-        return $this->_pulseTimer;
+        $res = $this->_pulseTimer;
+        return $res;
+    }
+
+    /**
+     * Returns the decoding method applied to the input (analog or multiplexed binary switches).
+     *
+     * @return integer : a value among YAnButton::INPUTTYPE_ANALOG_FAST, YAnButton::INPUTTYPE_DIGITAL4 and
+     * YAnButton::INPUTTYPE_ANALOG_SMOOTH corresponding to the decoding method applied to the input (analog
+     * or multiplexed binary switches)
+     *
+     * On failure, throws an exception or returns YAnButton::INPUTTYPE_INVALID.
+     */
+    public function get_inputType()
+    {
+        // $res                    is a enumINPUTTYPE;
+        if ($this->_cacheExpiration <= YAPI::GetTickCount()) {
+            if ($this->load(YAPI::$_yapiContext->GetCacheValidity()) != YAPI_SUCCESS) {
+                return Y_INPUTTYPE_INVALID;
+            }
+        }
+        $res = $this->_inputType;
+        return $res;
+    }
+
+    /**
+     * Changes the decoding method applied to the input (analog or multiplexed binary switches).
+     * Remember to call the saveToFlash() method of the module if the modification must be kept.
+     *
+     * @param integer $newval : a value among YAnButton::INPUTTYPE_ANALOG_FAST,
+     * YAnButton::INPUTTYPE_DIGITAL4 and YAnButton::INPUTTYPE_ANALOG_SMOOTH corresponding to the decoding
+     * method applied to the input (analog or multiplexed binary switches)
+     *
+     * @return integer : YAPI::SUCCESS if the call succeeds.
+     *
+     * On failure, throws an exception or returns a negative error code.
+     */
+    public function set_inputType($newval)
+    {
+        $rest_val = strval($newval);
+        return $this->_setAttr("inputType",$rest_val);
     }
 
     /**
@@ -444,15 +524,20 @@ class YAnButton extends YFunction
      *
      * This function does not require that the analog input is online at the time
      * it is invoked. The returned object is nevertheless valid.
-     * Use the method YAnButton.isOnline() to test if the analog input is
+     * Use the method isOnline() to test if the analog input is
      * indeed online at a given time. In case of ambiguity when looking for
      * an analog input by logical name, no error is notified: the first instance
      * found is returned. The search is performed first by hardware name,
      * then by logical name.
      *
-     * @param func : a string that uniquely characterizes the analog input
+     * If a call to this object's is_online() method returns FALSE although
+     * you are certain that the matching device is plugged, make sure that you did
+     * call registerHub() at application initialization time.
      *
-     * @return a YAnButton object allowing you to drive the analog input.
+     * @param string $func : a string that uniquely characterizes the analog input, for instance
+     *         YBUZZER2.anButton1.
+     *
+     * @return YAnButton : a YAnButton object allowing you to drive the analog input.
      */
     public static function FindAnButton($func)
     {
@@ -468,7 +553,7 @@ class YAnButton extends YFunction
     /**
      * Returns the pulse counter value as well as its timer.
      *
-     * @return YAPI_SUCCESS if the call succeeds.
+     * @return integer : YAPI::SUCCESS if the call succeeds.
      *
      * On failure, throws an exception or returns a negative error code.
      */
@@ -525,10 +610,19 @@ class YAnButton extends YFunction
     public function pulseTimer()
     { return $this->get_pulseTimer(); }
 
+    public function inputType()
+    { return $this->get_inputType(); }
+
+    public function setInputType($newval)
+    { return $this->set_inputType($newval); }
+
     /**
      * Continues the enumeration of analog inputs started using yFirstAnButton().
+     * Caution: You can't make any assumption about the returned analog inputs order.
+     * If you want to find a specific an analog input, use AnButton.findAnButton()
+     * and a hardwareID or a logical name.
      *
-     * @return a pointer to a YAnButton object, corresponding to
+     * @return YAnButton : a pointer to a YAnButton object, corresponding to
      *         an analog input currently online, or a null pointer
      *         if there are no more analog inputs to enumerate.
      */
@@ -537,15 +631,15 @@ class YAnButton extends YFunction
         if($resolve->errorType != YAPI_SUCCESS) return null;
         $next_hwid = YAPI::getNextHardwareId($this->_className, $resolve->result);
         if($next_hwid == null) return null;
-        return yFindAnButton($next_hwid);
+        return self::FindAnButton($next_hwid);
     }
 
     /**
      * Starts the enumeration of analog inputs currently accessible.
-     * Use the method YAnButton.nextAnButton() to iterate on
+     * Use the method YAnButton::nextAnButton() to iterate on
      * next analog inputs.
      *
-     * @return a pointer to a YAnButton object, corresponding to
+     * @return YAnButton : a pointer to a YAnButton object, corresponding to
      *         the first analog input currently online, or a null pointer
      *         if there are none.
      */
@@ -559,7 +653,7 @@ class YAnButton extends YFunction
 
 };
 
-//--- (AnButton functions)
+//--- (YAnButton functions)
 
 /**
  * Retrieves an analog input for a given identifier.
@@ -574,15 +668,20 @@ class YAnButton extends YFunction
  *
  * This function does not require that the analog input is online at the time
  * it is invoked. The returned object is nevertheless valid.
- * Use the method YAnButton.isOnline() to test if the analog input is
+ * Use the method isOnline() to test if the analog input is
  * indeed online at a given time. In case of ambiguity when looking for
  * an analog input by logical name, no error is notified: the first instance
  * found is returned. The search is performed first by hardware name,
  * then by logical name.
  *
- * @param func : a string that uniquely characterizes the analog input
+ * If a call to this object's is_online() method returns FALSE although
+ * you are certain that the matching device is plugged, make sure that you did
+ * call registerHub() at application initialization time.
  *
- * @return a YAnButton object allowing you to drive the analog input.
+ * @param string $func : a string that uniquely characterizes the analog input, for instance
+ *         YBUZZER2.anButton1.
+ *
+ * @return YAnButton : a YAnButton object allowing you to drive the analog input.
  */
 function yFindAnButton($func)
 {
@@ -591,10 +690,10 @@ function yFindAnButton($func)
 
 /**
  * Starts the enumeration of analog inputs currently accessible.
- * Use the method YAnButton.nextAnButton() to iterate on
+ * Use the method YAnButton::nextAnButton() to iterate on
  * next analog inputs.
  *
- * @return a pointer to a YAnButton object, corresponding to
+ * @return YAnButton : a pointer to a YAnButton object, corresponding to
  *         the first analog input currently online, or a null pointer
  *         if there are none.
  */
@@ -603,5 +702,5 @@ function yFirstAnButton()
     return YAnButton::FirstAnButton();
 }
 
-//--- (end of AnButton functions)
+//--- (end of YAnButton functions)
 ?>

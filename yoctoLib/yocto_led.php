@@ -1,11 +1,11 @@
 <?php
 /*********************************************************************
  *
- * $Id: yocto_led.php 24475 2016-05-12 14:03:35Z mvuilleu $
+ *  $Id: yocto_led.php 43580 2021-01-26 17:46:01Z mvuilleu $
  *
- * Implements YLed, the high-level API for Led functions
+ *  Implements YLed, the high-level API for Led functions
  *
- * - - - - - - - - - License information: - - - - - - - - - 
+ *  - - - - - - - - - License information: - - - - - - - - -
  *
  *  Copyright (C) 2011 and beyond by Yoctopuce Sarl, Switzerland.
  *
@@ -24,7 +24,7 @@
  *  obligations.
  *
  *  THE SOFTWARE AND DOCUMENTATION ARE PROVIDED 'AS IS' WITHOUT
- *  WARRANTY OF ANY KIND, EITHER EXPRESS OR IMPLIED, INCLUDING 
+ *  WARRANTY OF ANY KIND, EITHER EXPRESS OR IMPLIED, INCLUDING
  *  WITHOUT LIMITATION, ANY WARRANTY OF MERCHANTABILITY, FITNESS
  *  FOR A PARTICULAR PURPOSE, TITLE AND NON-INFRINGEMENT. IN NO
  *  EVENT SHALL LICENSOR BE LIABLE FOR ANY INCIDENTAL, SPECIAL,
@@ -53,13 +53,16 @@ if(!defined('Y_BLINKING_PANIC'))             define('Y_BLINKING_PANIC',         
 if(!defined('Y_BLINKING_INVALID'))           define('Y_BLINKING_INVALID',          -1);
 if(!defined('Y_LUMINOSITY_INVALID'))         define('Y_LUMINOSITY_INVALID',        YAPI_INVALID_UINT);
 //--- (end of YLed definitions)
+    #--- (YLed yapiwrapper)
+   #--- (end of YLed yapiwrapper)
 
 //--- (YLed declaration)
 /**
- * YLed Class: Led function interface
+ * YLed Class: monochrome LED control interface, available for instance in the Yocto-Buzzer, the
+ * YoctoBox-Short-Thin-Black-Prox, the YoctoBox-Short-Thin-Transp or the YoctoBox-Short-Thin-Transp-Prox
  *
- * The Yoctopuce application programming interface
- * allows you not only to drive the intensity of the LED, but also to
+ * The YLed class allows you to drive a monocolor LED.
+ * You can not only to drive the intensity of the LED, but also to
  * have it blink at various preset frequencies.
  */
 class YLed extends YFunction
@@ -113,26 +116,28 @@ class YLed extends YFunction
     /**
      * Returns the current LED state.
      *
-     * @return either Y_POWER_OFF or Y_POWER_ON, according to the current LED state
+     * @return integer : either YLed::POWER_OFF or YLed::POWER_ON, according to the current LED state
      *
-     * On failure, throws an exception or returns Y_POWER_INVALID.
+     * On failure, throws an exception or returns YLed::POWER_INVALID.
      */
     public function get_power()
     {
+        // $res                    is a enumONOFF;
         if ($this->_cacheExpiration <= YAPI::GetTickCount()) {
-            if ($this->load(YAPI::$defaultCacheValidity) != YAPI_SUCCESS) {
+            if ($this->load(YAPI::$_yapiContext->GetCacheValidity()) != YAPI_SUCCESS) {
                 return Y_POWER_INVALID;
             }
         }
-        return $this->_power;
+        $res = $this->_power;
+        return $res;
     }
 
     /**
      * Changes the state of the LED.
      *
-     * @param newval : either Y_POWER_OFF or Y_POWER_ON, according to the state of the LED
+     * @param integer $newval : either YLed::POWER_OFF or YLed::POWER_ON, according to the state of the LED
      *
-     * @return YAPI_SUCCESS if the call succeeds.
+     * @return integer : YAPI::SUCCESS if the call succeeds.
      *
      * On failure, throws an exception or returns a negative error code.
      */
@@ -145,26 +150,29 @@ class YLed extends YFunction
     /**
      * Returns the current LED intensity (in per cent).
      *
-     * @return an integer corresponding to the current LED intensity (in per cent)
+     * @return integer : an integer corresponding to the current LED intensity (in per cent)
      *
-     * On failure, throws an exception or returns Y_LUMINOSITY_INVALID.
+     * On failure, throws an exception or returns YLed::LUMINOSITY_INVALID.
      */
     public function get_luminosity()
     {
+        // $res                    is a int;
         if ($this->_cacheExpiration <= YAPI::GetTickCount()) {
-            if ($this->load(YAPI::$defaultCacheValidity) != YAPI_SUCCESS) {
+            if ($this->load(YAPI::$_yapiContext->GetCacheValidity()) != YAPI_SUCCESS) {
                 return Y_LUMINOSITY_INVALID;
             }
         }
-        return $this->_luminosity;
+        $res = $this->_luminosity;
+        return $res;
     }
 
     /**
-     * Changes the current LED intensity (in per cent).
+     * Changes the current LED intensity (in per cent). Remember to call the
+     * saveToFlash() method of the module if the modification must be kept.
      *
-     * @param newval : an integer corresponding to the current LED intensity (in per cent)
+     * @param integer $newval : an integer corresponding to the current LED intensity (in per cent)
      *
-     * @return YAPI_SUCCESS if the call succeeds.
+     * @return integer : YAPI::SUCCESS if the call succeeds.
      *
      * On failure, throws an exception or returns a negative error code.
      */
@@ -177,28 +185,31 @@ class YLed extends YFunction
     /**
      * Returns the current LED signaling mode.
      *
-     * @return a value among Y_BLINKING_STILL, Y_BLINKING_RELAX, Y_BLINKING_AWARE, Y_BLINKING_RUN,
-     * Y_BLINKING_CALL and Y_BLINKING_PANIC corresponding to the current LED signaling mode
+     * @return integer : a value among YLed::BLINKING_STILL, YLed::BLINKING_RELAX, YLed::BLINKING_AWARE,
+     * YLed::BLINKING_RUN, YLed::BLINKING_CALL and YLed::BLINKING_PANIC corresponding to the current LED signaling mode
      *
-     * On failure, throws an exception or returns Y_BLINKING_INVALID.
+     * On failure, throws an exception or returns YLed::BLINKING_INVALID.
      */
     public function get_blinking()
     {
+        // $res                    is a enumBLINK;
         if ($this->_cacheExpiration <= YAPI::GetTickCount()) {
-            if ($this->load(YAPI::$defaultCacheValidity) != YAPI_SUCCESS) {
+            if ($this->load(YAPI::$_yapiContext->GetCacheValidity()) != YAPI_SUCCESS) {
                 return Y_BLINKING_INVALID;
             }
         }
-        return $this->_blinking;
+        $res = $this->_blinking;
+        return $res;
     }
 
     /**
      * Changes the current LED signaling mode.
      *
-     * @param newval : a value among Y_BLINKING_STILL, Y_BLINKING_RELAX, Y_BLINKING_AWARE, Y_BLINKING_RUN,
-     * Y_BLINKING_CALL and Y_BLINKING_PANIC corresponding to the current LED signaling mode
+     * @param integer $newval : a value among YLed::BLINKING_STILL, YLed::BLINKING_RELAX,
+     * YLed::BLINKING_AWARE, YLed::BLINKING_RUN, YLed::BLINKING_CALL and YLed::BLINKING_PANIC corresponding to
+     * the current LED signaling mode
      *
-     * @return YAPI_SUCCESS if the call succeeds.
+     * @return integer : YAPI::SUCCESS if the call succeeds.
      *
      * On failure, throws an exception or returns a negative error code.
      */
@@ -209,7 +220,7 @@ class YLed extends YFunction
     }
 
     /**
-     * Retrieves a LED for a given identifier.
+     * Retrieves a monochrome LED for a given identifier.
      * The identifier can be specified using several formats:
      * <ul>
      * <li>FunctionLogicalName</li>
@@ -219,17 +230,22 @@ class YLed extends YFunction
      * <li>ModuleLogicalName.FunctionLogicalName</li>
      * </ul>
      *
-     * This function does not require that the LED is online at the time
+     * This function does not require that the monochrome LED is online at the time
      * it is invoked. The returned object is nevertheless valid.
-     * Use the method YLed.isOnline() to test if the LED is
+     * Use the method isOnline() to test if the monochrome LED is
      * indeed online at a given time. In case of ambiguity when looking for
-     * a LED by logical name, no error is notified: the first instance
+     * a monochrome LED by logical name, no error is notified: the first instance
      * found is returned. The search is performed first by hardware name,
      * then by logical name.
      *
-     * @param func : a string that uniquely characterizes the LED
+     * If a call to this object's is_online() method returns FALSE although
+     * you are certain that the matching device is plugged, make sure that you did
+     * call registerHub() at application initialization time.
      *
-     * @return a YLed object allowing you to drive the LED.
+     * @param string $func : a string that uniquely characterizes the monochrome LED, for instance
+     *         YBUZZER2.led1.
+     *
+     * @return YLed : a YLed object allowing you to drive the monochrome LED.
      */
     public static function FindLed($func)
     {
@@ -261,27 +277,30 @@ class YLed extends YFunction
     { return $this->set_blinking($newval); }
 
     /**
-     * Continues the enumeration of LEDs started using yFirstLed().
+     * Continues the enumeration of monochrome LEDs started using yFirstLed().
+     * Caution: You can't make any assumption about the returned monochrome LEDs order.
+     * If you want to find a specific a monochrome LED, use Led.findLed()
+     * and a hardwareID or a logical name.
      *
-     * @return a pointer to a YLed object, corresponding to
-     *         a LED currently online, or a null pointer
-     *         if there are no more LEDs to enumerate.
+     * @return YLed : a pointer to a YLed object, corresponding to
+     *         a monochrome LED currently online, or a null pointer
+     *         if there are no more monochrome LEDs to enumerate.
      */
     public function nextLed()
     {   $resolve = YAPI::resolveFunction($this->_className, $this->_func);
         if($resolve->errorType != YAPI_SUCCESS) return null;
         $next_hwid = YAPI::getNextHardwareId($this->_className, $resolve->result);
         if($next_hwid == null) return null;
-        return yFindLed($next_hwid);
+        return self::FindLed($next_hwid);
     }
 
     /**
-     * Starts the enumeration of LEDs currently accessible.
-     * Use the method YLed.nextLed() to iterate on
-     * next LEDs.
+     * Starts the enumeration of monochrome LEDs currently accessible.
+     * Use the method YLed::nextLed() to iterate on
+     * next monochrome LEDs.
      *
-     * @return a pointer to a YLed object, corresponding to
-     *         the first LED currently online, or a null pointer
+     * @return YLed : a pointer to a YLed object, corresponding to
+     *         the first monochrome LED currently online, or a null pointer
      *         if there are none.
      */
     public static function FirstLed()
@@ -294,10 +313,10 @@ class YLed extends YFunction
 
 };
 
-//--- (Led functions)
+//--- (YLed functions)
 
 /**
- * Retrieves a LED for a given identifier.
+ * Retrieves a monochrome LED for a given identifier.
  * The identifier can be specified using several formats:
  * <ul>
  * <li>FunctionLogicalName</li>
@@ -307,17 +326,22 @@ class YLed extends YFunction
  * <li>ModuleLogicalName.FunctionLogicalName</li>
  * </ul>
  *
- * This function does not require that the LED is online at the time
+ * This function does not require that the monochrome LED is online at the time
  * it is invoked. The returned object is nevertheless valid.
- * Use the method YLed.isOnline() to test if the LED is
+ * Use the method isOnline() to test if the monochrome LED is
  * indeed online at a given time. In case of ambiguity when looking for
- * a LED by logical name, no error is notified: the first instance
+ * a monochrome LED by logical name, no error is notified: the first instance
  * found is returned. The search is performed first by hardware name,
  * then by logical name.
  *
- * @param func : a string that uniquely characterizes the LED
+ * If a call to this object's is_online() method returns FALSE although
+ * you are certain that the matching device is plugged, make sure that you did
+ * call registerHub() at application initialization time.
  *
- * @return a YLed object allowing you to drive the LED.
+ * @param string $func : a string that uniquely characterizes the monochrome LED, for instance
+ *         YBUZZER2.led1.
+ *
+ * @return YLed : a YLed object allowing you to drive the monochrome LED.
  */
 function yFindLed($func)
 {
@@ -325,12 +349,12 @@ function yFindLed($func)
 }
 
 /**
- * Starts the enumeration of LEDs currently accessible.
- * Use the method YLed.nextLed() to iterate on
- * next LEDs.
+ * Starts the enumeration of monochrome LEDs currently accessible.
+ * Use the method YLed::nextLed() to iterate on
+ * next monochrome LEDs.
  *
- * @return a pointer to a YLed object, corresponding to
- *         the first LED currently online, or a null pointer
+ * @return YLed : a pointer to a YLed object, corresponding to
+ *         the first monochrome LED currently online, or a null pointer
  *         if there are none.
  */
 function yFirstLed()
@@ -338,5 +362,5 @@ function yFirstLed()
     return YLed::FirstLed();
 }
 
-//--- (end of Led functions)
+//--- (end of YLed functions)
 ?>
